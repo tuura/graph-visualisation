@@ -12,11 +12,6 @@ inputData = Connect (Connect (Vertex "a") (Overlay (Vertex "b") (Vertex "c"))) (
 node :: String -> Diagram B 
 node n = text n # fontSizeL 0.3 <> circle 0.7 # named n
 
-countGraphVertices :: Graph String -> Int
-countGraphVertices (Vertex a) = 1
-countGraphVertices (Overlay a b) = countGraphVertices a + countGraphVertices b
-countGraphVertices (Connect a b) = countGraphVertices a + countGraphVertices b
-
 name :: Graph String -> String
 name (Vertex a) = a
 name (Overlay a b) = name a ++ "_overlay_" ++ name b
