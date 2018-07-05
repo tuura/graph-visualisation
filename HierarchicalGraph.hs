@@ -15,7 +15,7 @@ layoutPoly :: (V t ~ V2, TrailLike t) => Int -> t
 layoutPoly n = regPoly n 1
 
 node :: String -> Diagram B 
-node n = text n # fontSizeL 0.1 <> circle 0.05 # named n
+node n = text n # fontSizeL 0.3 <> circle 0.7 # named n
 
 countGraphVertices :: Graph String -> Int
 countGraphVertices (Vertex a) = 1
@@ -29,9 +29,11 @@ name (Connect a b) = name a ++ "_connect_" ++ name b
 
 drawGraph :: Graph String -> Diagram B
 drawGraph g@(Vertex a) = node $ name g
-drawGraph g@(Overlay g1 g2) = (drawGraph g1 === strutY 1 === drawGraph g2) # bgFrame 0.1 blue # opacity 0.5 # named (name g)
-drawGraph g@(Connect g1 g2) = (connectOutside (name g1) (name g2) drawn) # bgFrame 0.1 orange # opacity 0.5 # named (name g)
-    where drawn = drawGraph g1 ||| strutX 1 ||| drawGraph g2
+drawGraph g@(Overlay g1 g2) = (drawn <> boundingRect drawn # fc orange # lw none # opacity 0.4) # named (name g)
+    where drawn = (drawGraph g1 === strutY 1 === drawGraph g2) # frame 0.2
+drawGraph g@(Connect g1 g2) = (arrowed <> boundingRect arrowed # fc orange # lw none # opacity 0.4) # named (name g)
+    where arrowed = connectOutside (name g1) (name g2) drawn
+          drawn = (drawGraph g1 ||| strutX 1 ||| drawGraph g2) # frame 0.2
 
 visualise :: Graph String -> Diagram B
 visualise g = drawGraph g # frame 0.2
