@@ -1,18 +1,13 @@
 {-# LANGUAGE NoMonomorphismRestriction #-}
 {-# LANGUAGE FlexibleContexts          #-}
 {-# LANGUAGE TypeFamilies              #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
 
 import Diagrams.Prelude
 import Diagrams.Backend.SVG.CmdLine
-import Diagrams.Path
 
 data Graph a = Vertex a | Overlay (Graph a) (Graph a) | Connect (Graph a) (Graph a)
 
 inputData = Connect (Connect (Vertex "a") (Overlay (Vertex "b") (Vertex "c"))) (Connect (Vertex "d") (Vertex "e"))
-
-layoutPoly :: (V t ~ V2, TrailLike t) => Int -> t
-layoutPoly n = regPoly n 1
 
 node :: String -> Diagram B 
 node n = text n # fontSizeL 0.3 <> circle 0.7 # named n
@@ -35,7 +30,4 @@ drawGraph g@(Connect g1 g2) = (arrowed <> boundingRect arrowed # fc orange # lw 
     where arrowed = connectOutside (name g1) (name g2) drawn
           drawn = (drawGraph g1 ||| strutX 1 ||| drawGraph g2) # frame 0.2
 
-visualise :: Graph String -> Diagram B
-visualise g = drawGraph g # frame 0.2
-
-main = mainWith $ visualise inputData
+main = mainWith $ drawGraph inputData # frame 0.2
