@@ -28,16 +28,8 @@ name (Overlay a b) = name a ++ "_overlay_" ++ name b
 name (Connect a b) = name a ++ "_connect_" ++ name b
 
 drawGraph :: Graph String -> Diagram B
-drawGraph g@(Overlay g1@(Vertex a) g2@(Vertex b)) = ((node $ name g1) === strutY 1 === (node $ name g2)) # bgFrame 0.1 red # opacity 0.5 # named (name g)
-drawGraph g@(Overlay g1@(Vertex a) g2) = ((node $ name g1) === strutY 1 === drawGraph g2) # bgFrame 0.1 green # opacity 0.5 # named (name g)
-drawGraph g@(Overlay g1 g2@(Vertex b)) = (drawGraph g1 === strutY 1 === (node $ name g2)) # bgFrame 0.1 yellow # opacity 0.5 # named (name g)
+drawGraph g@(Vertex a) = node $ name g
 drawGraph g@(Overlay g1 g2) = (drawGraph g1 === strutY 1 === drawGraph g2) # bgFrame 0.1 blue # opacity 0.5 # named (name g)
-drawGraph g@(Connect g1@(Vertex a) g2@(Vertex b)) = (connectOutside (name g1) (name g2) drawn) # bgFrame 0.1 blue # opacity 0.5 # named (name g)
-    where drawn = (node $ name g1) ||| strutX 1 ||| (node $ name g2)
-drawGraph g@(Connect g1@(Vertex a) g2) = (connectOutside (name g1) (name g2) drawn) # bgFrame 0.1 orange # opacity 0.5 # named (name g)
-    where drawn = (node $ name g1) ||| strutX 1 ||| ((drawGraph g2) # named (name g))
-drawGraph g@(Connect g1 g2@(Vertex b)) = (connectOutside (name g1) (name g2) drawn) # bgFrame 0.1 orange # opacity 0.5 # named (name g)
-    where drawn = (drawGraph g1 # named (name g)) ||| strutX 1 ||| (node $ name g2)
 drawGraph g@(Connect g1 g2) = (connectOutside (name g1) (name g2) drawn) # bgFrame 0.1 orange # opacity 0.5 # named (name g)
     where drawn = drawGraph g1 ||| strutX 1 ||| drawGraph g2
 
