@@ -19,7 +19,7 @@ countV (Overlay a b) = countV a + countV b
 countV (Connect a b) = countV a + countV b
 
 node :: String -> Diagram B 
-node n = text n # fontSizeL 0.3 <> circle 0.7 # named n
+node n = text n # fontSizeL 0.4 <> circle 0.7 # lwL 0.05 # named n
 
 name :: Graph String -> String
 name (Vertex a) = a
