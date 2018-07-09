@@ -44,7 +44,7 @@ visualise :: (Show a) => Settings -> Graph a -> Diagram B
 visualise s g = mconcat $ connections <*> [diag]
     where diag = atPoints vertices $ node <$> names
           vertices = trailVertices layout
-          layout   = layoutPoly $ countV g
+          layout   = layoutPoly $ length names
           names = nub namesWDup
           (PGraph namesWDup connections) = getVertices s g
 
