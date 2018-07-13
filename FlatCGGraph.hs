@@ -91,7 +91,7 @@ getEdgesFrom x = foldr (\(a,bs) acc -> if x `elem` bs then a : acc else acc) []
 getLevels :: (Show a, Eq a) => [a] -> [(a,[a])] -> [[a]]
 getLevels [] _ = []
 getLevels l cTo = foldLevel : getLevels (l \\ foldLevel) cTo
-    where foldLevel = fst $ foldr (\x (acc,flag) -> if flag || or ((\a -> dependsOn x a cTo) <$> acc) || any (\a -> dependsOn a x cTo) acc then (acc,True) else (x:acc,False)) ([],False) l
+    where foldLevel = fst $ foldr (\x (acc,flag) -> if flag || or ((\a -> dependsOn x a cTo) <$> acc) || any (\a -> dependsOn a x cTo) acc then (acc,True) else (x:acc,False)) ([],False) (reverse l)
 
 reducedConnections :: (Show a, Eq a) => ConnectList a -> [(a,a)]
 reducedConnections = foldr (\(x,ys) acc -> zip ys (repeat x) ++ acc) []
@@ -99,22 +99,42 @@ reducedConnections = foldr (\(x,ys) acc -> zip ys (repeat x) ++ acc) []
 node :: String -> Diagram B
 node n = (text n # fontSizeL 0.1 # href ("javascript:alert(\"Node " ++ n ++ "\")") <> circle 0.1) # named n
 
-layerDifference :: (Show a, Eq a) => a -> a -> [[a]] -> Int
-layerDifference a b l = foldLayers a - foldLayers b
-    where foldLayers x = snd (foldr (\xs (c1,c2) -> if x `elem` xs then (c1,c1) else (c1 + 1,c2)) (0,0) l)
+layerDiff :: (Show a, Eq a) => a -> a -> [[a]] -> Int
+layerDiff a b l = (fst (foldGraphLayers a l) - fst (foldGraphLayers b l))
+
+isElemOnLeft :: (Show a, Eq a) => a -> [[a]] -> Bool
+isElemOnLeft x l = snd $ foldGraphLayers x l
+
+foldGraphLayers :: (Show a, Eq a) => a -> [[a]] -> (Int,Bool)
+foldGraphLayers x l = let ((_,layerNum), isLeft) = fold in (layerNum, isLeft)
+    where fold = foldr (\xs ((c1,c2),isLeft) -> if x `elem` xs then ((c1,c1), isOnLeftOfLayer (getElemIndex $ x `elemIndex` xs) (length xs - 1))
+                                                else ((c1 + 1,c2),isLeft)) ((0,0),False) l
+          getElemIndex (Just i) = i
+          getElemIndex Nothing = 0
+
+isOnLeftOfLayer :: Int -> Int -> Bool
+isOnLeftOfLayer x y
+    | fromIntegral x < (fromIntegral y)/2 = True
+    | otherwise = False
 
 visualiseLayers :: [[String]] -> Diagram B
 visualiseLayers levelled = vsep 0.2 $ foldl (\acc level -> center (hsep 0.3 $ node <$> level) : acc) [] levelled
 
-connectNodes :: ArrowOpts Double -> String -> String -> [[String]] -> Diagram B
-connectNodes arrowOptsF n1 n2 levelled = connectPerim' arrowOptsF n1 n2 (-1/4 @@ turn) (1/4 @@ turn) $ visualiseLayers levelled
+connectNodes :: ArrowOpts Double -> String -> String -> [[String]] -> Maybe Bool -> Diagram B
+connectNodes arrowOptsF n1 n2 levelled isLeft = connectPerim' arrowOptsF n1 n2 degreeOne degreeTwo $ visualiseLayers levelled
+    where degreeOne = getArrowPoints isLeft (1/2 @@ turn) (0 @@ turn) (-1/4 @@ turn)
+          degreeTwo = getArrowPoints isLeft (1/2 @@ turn) (0 @@ turn) (1/4 @@ turn)
+
+getArrowPoints :: Maybe Bool -> a -> a -> a -> a
+getArrowPoints isLeft a b c = if isJust isLeft then let (Just left) = isLeft in if left then a else b else c
 
 visualise :: Graph String -> Diagram B
 visualise g = mconcat connectedDiagram
-    where connectedDiagram = map (\(a,b) -> (if abs (layerDifference a b levelled) > 1 then connectNodes arrowOpts2 a b levelled else connectNodes arrowOpts1 a b levelled)) $ reducedConnections reduced
+    where connectedDiagram = map (\(a,b) -> (if abs (layerDiff a b levelled) > 1 then connectNodes (arrowOpts2 a) a b levelled $ Just (isLeft a) else connectNodes arrowOpts1 a b levelled Nothing)) $ reducedConnections reduced
           arrowOpts1 = with
-          arrowOpts2 = with & arrowShaft .~ arc xDir (3/12 @@ turn)
-          levelled = getLevels topList reduced 
+          arrowOpts2 a = if isLeft a then with & arrowShaft .~ arc xDir (3/12 @@ turn) else with & arrowShaft .~ arc xDir (-3/12 @@ turn)
+          isLeft a = isElemOnLeft a levelled
+          levelled = reverse . getLevels topList $ reduced 
           topList = getLevelList (getRoots names reduced) reduced
           reduced = reduction (connectedFrom connections) []
           names = nub namesWDuplicates
@@ -122,6 +142,6 @@ visualise g = mconcat connectedDiagram
 
 main = mainWith $ visualise inputTestData # frame 0.1
 
--- inputTestData = (Connect (Connect (Connect (Connect (Vertex 1) (Connect (Vertex 2) (Vertex 3))) (Vertex 4)) (Overlay (Overlay (Overlay (Vertex 5) (Vertex 6)) (Connect (Connect (Vertex 7) (Connect (Overlay (Connect (Overlay (Connect (Vertex 8) (Connect (Vertex 9) (Vertex 10))) (Vertex 11)) (Vertex 12)) (Vertex 13)) (Vertex 14))) (Vertex 21))) (Overlay (Vertex 16) (Connect (Overlay (Connect (Vertex 17) (Connect (Overlay (Vertex 18) (Vertex 19)) (Vertex 20))) (Vertex 15)) (Overlay (Overlay (Overlay (Vertex 22) (Vertex 23)) (Connect (Connect (Vertex 24) (Vertex 25)) (Vertex 26))) (Vertex 27)))))) (Vertex 28))
 inputTestData :: Graph String
+-- inputTestData = show <$> (Connect (Connect (Connect (Connect (Vertex 1) (Connect (Vertex 2) (Vertex 3))) (Vertex 4)) (Overlay (Overlay (Overlay (Vertex 5) (Vertex 6)) (Connect (Connect (Vertex 7) (Connect (Overlay (Connect (Overlay (Connect (Vertex 8) (Connect (Vertex 9) (Vertex 10))) (Vertex 11)) (Vertex 12)) (Vertex 13)) (Vertex 14))) (Vertex 21))) (Overlay (Vertex 16) (Connect (Overlay (Connect (Vertex 17) (Connect (Overlay (Vertex 18) (Vertex 19)) (Vertex 20))) (Vertex 15)) (Overlay (Overlay (Overlay (Vertex 22) (Vertex 23)) (Connect (Connect (Vertex 24) (Vertex 25)) (Vertex 26))) (Vertex 27)))))) (Vertex 28))
 inputTestData = show <$> Connect (Vertex 1) (Overlay (Connect (Vertex 2) (Overlay (Connect (Vertex 4) (Vertex 7)) (Connect (Vertex 5) (Vertex 7)))) (Connect (Vertex 3) (Connect (Vertex 6) (Connect (Vertex 5) (Vertex 7)))))
