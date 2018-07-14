@@ -1,11 +1,12 @@
 module Visualise (
     ProcessedGraph(..),
 
-    countVertices, getVertices,
+    countVertices, getVertices, dynamicStyle
 ) where
 
 import Algebra.Graph
-import Diagrams.Prelude     (Measure)
+import Diagrams.Prelude
+import Diagrams.Backend.SVG
 
 data ProcessedGraph a = ProcessedGraph [a] [(a, a)] deriving (Show)
 
@@ -22,3 +23,7 @@ getVertices (Overlay a b) = ProcessedGraph (nA ++ nB) (cA ++ cB)
 getVertices (Connect a b) = ProcessedGraph (nA ++ nB) ([(aA, bB) | aA <- nA, bB <- nB] ++ cA ++ cB)
     where (ProcessedGraph nA cA) = getVertices a
           (ProcessedGraph nB cB) = getVertices b
+
+
+dynamicStyle :: Measure Double -> Measure Double -> Measure Double
+dynamicStyle def graphSize = def * 10/graphSize

@@ -8,26 +8,27 @@ module Visualise.VisDAG (
     drawDAG
 ) where
 
+import Visualise
+import Algebra.Graph
 import Diagrams.Prelude
-import Diagrams.Backend.SVG.CmdLine
-import Diagrams.Backend.SVG             (renderSVG)
+-- import Diagrams.Backend.SVG.CmdLine
+import Diagrams.Backend.SVG
 import Diagrams.Path
 import Data.List
 import Data.Maybe
-import Algebra.Graph
 
-data PGraph a = PGraph [a] [(a, a)] deriving (Show)
+-- data PGraph a = PGraph [a] [(a, a)] deriving (Show)
 
 type ConnectList a = [(a,[a])]
 
-getVertices :: (Show a, Eq a) => Graph a -> PGraph a
-getVertices (Vertex a) = PGraph [a] []
-getVertices (Overlay a b) = PGraph (nA ++ nB) (cA ++ cB)
-    where (PGraph nA cA) = getVertices a
-          (PGraph nB cB) = getVertices b
-getVertices (Connect a b) = PGraph (nA ++ nB) ([(aA, bB) | aA <- nA, bB <- nB] ++ cA ++ cB)
-    where (PGraph nA cA) = getVertices a
-          (PGraph nB cB) = getVertices b
+-- getVertices :: (Show a, Eq a) => Graph a -> PGraph a
+-- getVertices (Vertex a) = PGraph [a] []
+-- getVertices (Overlay a b) = PGraph (nA ++ nB) (cA ++ cB)
+--     where (PGraph nA cA) = getVertices a
+--           (PGraph nB cB) = getVertices b
+-- getVertices (Connect a b) = PGraph (nA ++ nB) ([(aA, bB) | aA <- nA, bB <- nB] ++ cA ++ cB)
+--     where (PGraph nA cA) = getVertices a
+--           (PGraph nB cB) = getVertices b
 
 connectedFrom :: (Show a, Eq a) => [(a,a)] -> ConnectList a
 connectedFrom [(a,b),(x,y)]
@@ -122,7 +123,7 @@ isOnLeftOfLayer x y
     | fromIntegral x < (fromIntegral y)/2 = True
     | otherwise = False
 
-visualiseLayers :: [[String]] -> Diagram B
+visualiseLayers :: [[String]] -> Diagram SVG
 visualiseLayers levelled = vsep 0.2 $ foldl (\acc level -> center (hsep 0.3 $ node <$> level) : acc) [] levelled
 
 connectNodes :: ArrowOpts Double -> String -> String -> [[String]] -> Maybe Bool -> Diagram B
@@ -133,7 +134,7 @@ connectNodes arrowOptsF n1 n2 levelled isLeft = connectPerim' arrowOptsF n1 n2 d
 getArrowPoints :: Maybe Bool -> a -> a -> a -> a
 getArrowPoints isLeft a b c = if isJust isLeft then let (Just left) = isLeft in if left then a else b else c
 
-visualiseDAG :: Graph String -> Diagram B
+visualiseDAG :: Graph String -> Diagram SVG
 visualiseDAG g = mconcat connectedDiagram # frame 0.1
     where connectedDiagram = map (\(a,b) -> (if abs (layerDiff a b levelled) > 1 then connectNodes (arrowOpts2 a) a b levelled $ Just (isLeft a) else connectNodes arrowOpts1 a b levelled Nothing)) $ reducedConnections reduced
           arrowOpts1 = with
@@ -143,13 +144,13 @@ visualiseDAG g = mconcat connectedDiagram # frame 0.1
           topList = getLevelList (getRoots names reduced) reduced
           reduced = reduction (connectedFrom connections) []
           names = nub namesWDuplicates
-          (PGraph namesWDuplicates connections) = getVertices g
+          (ProcessedGraph namesWDuplicates connections) = getVertices g
 
-drawDAG :: (Num n) => FilePath -> (Maybe n, Maybe n) -> Graph a -> IO ()
-drawDAG path (w,h) g = renderSVG path (mkSizeSpec2D w h) $ visualiseDAG graphString
-    where graphString = show <$> g
+drawDAG :: (Show a) => FilePath -> (Maybe Double, Maybe Double) -> Graph a -> IO ()
+drawDAG path (w,h) g = renderSVG path (mkSizeSpec2D w h) $ visualiseDAG graphToString
+    where graphToString = show <$> g
 
-main = mainWith $ drawDAG inputTestData
+-- main = mainWith $ drawDAG inputTestData
 
 inputTestData :: Graph String
 -- inputTestData = show <$> (Connect (Connect (Connect (Connect (Vertex 1) (Connect (Vertex 2) (Vertex 3))) (Vertex 4)) (Overlay (Overlay (Overlay (Vertex 5) (Vertex 6)) (Connect (Connect (Vertex 7) (Connect (Overlay (Connect (Overlay (Connect (Vertex 8) (Connect (Vertex 9) (Vertex 10))) (Vertex 11)) (Vertex 12)) (Vertex 13)) (Vertex 14))) (Vertex 21))) (Overlay (Vertex 16) (Connect (Overlay (Connect (Vertex 17) (Connect (Overlay (Vertex 18) (Vertex 19)) (Vertex 20))) (Vertex 15)) (Overlay (Overlay (Overlay (Vertex 22) (Vertex 23)) (Connect (Connect (Vertex 24) (Vertex 25)) (Vertex 26))) (Vertex 27)))))) (Vertex 28))

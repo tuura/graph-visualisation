@@ -2,10 +2,17 @@
 {-# LANGUAGE FlexibleContexts          #-}
 {-# LANGUAGE TypeFamilies              #-}
 
+module Visualise.VisHierarchical (
+    drawHierarchical
+) where
+
+import Algebra.Graph hiding ((===))
+import Visualise
 import Diagrams.Prelude
 import Diagrams.Backend.SVG.CmdLine
+import Diagrams.Backend.SVG         (renderSVG)
 
-data Graph a = Vertex a | Overlay (Graph a) (Graph a) | Connect (Graph a) (Graph a) deriving (Show, Read)
+-- data Graph a = Vertex a | Overlay (Graph a) (Graph a) | Connect (Graph a) (Graph a) deriving (Show, Read)
 
 data Settings = Settings { colF :: (Int -> Colour Double)
                          , bgOp :: Double
@@ -13,13 +20,7 @@ data Settings = Settings { colF :: (Int -> Colour Double)
                          , dynamicThick :: Measure Double
                          }
 
-countV :: Graph a -> Measure Double
-countV (Vertex a) = 1
-countV (Overlay a b) = countV a + countV b
-countV (Connect a b) = countV a + countV b
 
-measureDiv :: Measure Double -> Measure Double -> Measure Double
-measureDiv def graphSize = def * 10/graphSize
 
 node :: String -> Diagram B 
 node n = text n # href ("javascript:alert(\"Node " ++ n ++ "\")") # fontSizeL 0.4 <> circle 0.7 # lwL 0.05 # named n
@@ -29,17 +30,32 @@ name (Vertex a) = show a
 name (Overlay a b) = name a ++ "_overlay_" ++ name b
 name (Connect a b) = name a ++ "_connect_" ++ name b
 
-draw :: (Show a) => Graph a -> Int -> Settings -> Diagram B
-draw g@(Vertex a) l s = node $ name g
-draw g@(Overlay g1 g2) l s = (drawn <> boundingRect drawn # fc (colF s l) # lw none # opacity (bgOp s)) # named (name g)
-    where drawn = (draw g1 (l + 1) s === strutY 1 === draw g2 (l + 1) s) # frame 0.2
-draw g@(Connect g1 g2) l s = (arrowed <> boundingRect arrowed # fc (colF s l) # lw none # opacity (bgOp s)) # named (name g)
+visualiseHier :: (Show a) => Graph a -> Int -> Settings -> Diagram B
+visualiseHier g@(Vertex a) l s = node $ name g
+visualiseHier g@(Overlay g1 g2) l s = (drawn <> boundingRect drawn # fc (colF s l) # lw none # opacity (bgOp s)) # named (name g)
+    where drawn = (visualiseHier g1 (l + 1) s === strutY 1 === visualiseHier g2 (l + 1) s) # frame 0.2
+visualiseHier g@(Connect g1 g2) l s = (arrowed <> boundingRect arrowed # fc (colF s l) # lw none # opacity (bgOp s)) # named (name g)
     where arrowed = connectOutside' arrowOpts (name g1) (name g2) drawn
-          drawn = (draw g1 (l + 1) s ||| strutX 1 ||| draw g2 (l + 1) s) # frame 0.2
+          drawn = (visualiseHier g1 (l + 1) s ||| strutX 1 ||| visualiseHier g2 (l + 1) s) # frame 0.2
           arrowOpts = with & headLength .~ dynamicHead s & shaftStyle %~ lw (dynamicThick s)
 
-main = mainWith $ draw inputTestData 0 (Settings colourTest 0.7 (measureDiv normal entireSize) (measureDiv thin entireSize)) # frame 0.2
-    where entireSize = countV inputTestData
+drawHierarchical :: (Show a) => FilePath -> (Maybe Double, Maybe Double) -> Graph a -> IO ()
+drawHierarchical path dim g = drawHierarchical' defaultSettings path dim g
+
+drawHierarchical' :: (Show a) => Settings -> FilePath -> (Maybe Double, Maybe Double) -> Graph a -> IO ()
+drawHierarchical' s path (w,h) g = renderSVG path (mkSizeSpec2D w h) $ visualiseHier g 0 s # frame 0.1
+
+defaultSettings :: Settings
+defaultSettings = Settings alternatingColour 0.7 (dynamicStyle normal entireSize) (dynamicStyle thin entireSize)
+    where entireSize = countVertices inputTestData
+
+alternatingColour :: Int -> Colour Double
+alternatingColour i
+    | odd i = red
+    | otherwise = cyan
+
+
+main = mainWith $ visualiseHier inputTestData 0 defaultSettings # frame 0.2
 
 -- Test data:
 
@@ -54,8 +70,5 @@ main = mainWith $ draw inputTestData 0 (Settings colourTest 0.7 (measureDiv norm
 -- inputTestData = "(Overlay (Connect (Overlay (Vertex \"1\") (Vertex \"2\")) (Vertex \"3\")) (Connect (Overlay (Connect (Connect (Vertex \"4\") (Vertex \"5\")) (Overlay (Connect (Overlay (Connect (Vertex \"6\") (Vertex \"7\")) (Connect (Overlay (Vertex \"8\") (Vertex \"9\")) (Connect (Overlay (Overlay (Vertex \"10\") (Vertex \"11\")) (Vertex \"12\")) (Overlay (Vertex \"13\") (Connect (Vertex \"14\") (Vertex \"15\")))))) (Vertex \"16\")) (Connect (Vertex \"17\") (Connect (Overlay (Connect (Connect (Connect (Overlay (Vertex \"18\") (Overlay (Connect (Vertex \"19\") (Vertex \"20\")) (Vertex \"21\"))) (Overlay (Vertex \"22\") (Vertex \"23\"))) (Connect (Vertex \"24\") (Vertex \"25\"))) (Vertex \"26\")) (Overlay (Vertex \"27\") (Vertex \"28\"))) (Connect (Vertex \"29\") (Connect (Overlay (Connect (Vertex \"30\") (Overlay (Connect (Vertex \"31\") (Connect (Vertex \"32\") (Overlay (Vertex \"33\") (Overlay (Vertex \"34\") (Connect (Connect (Vertex \"35\") (Connect (Overlay (Connect (Connect (Connect (Vertex \"36\") (Overlay (Vertex \"37\") (Connect (Overlay (Vertex \"38\") (Vertex \"39\")) (Connect (Vertex \"40\") (Connect (Vertex \"41\") (Vertex \"42\")))))) (Vertex \"43\")) (Connect (Overlay (Overlay (Vertex \"44\") (Vertex \"45\")) (Connect (Connect (Overlay (Connect (Connect (Vertex \"46\") (Vertex \"47\")) (Overlay (Overlay (Connect (Vertex \"48\") (Vertex \"49\")) (Vertex \"50\")) (Overlay (Connect (Vertex \"51\") (Vertex \"52\")) (Overlay (Vertex \"53\") (Overlay (Connect (Vertex \"54\") (Overlay (Vertex \"55\") (Connect (Vertex \"56\") (Vertex \"57\")))) (Vertex \"58\")))))) (Connect (Overlay (Overlay (Vertex \"59\") (Vertex \"60\")) (Vertex \"61\")) (Connect (Vertex \"62\") (Vertex \"63\")))) (Overlay (Vertex \"64\") (Connect (Overlay (Vertex \"65\") (Connect (Vertex \"66\") (Overlay (Overlay (Vertex \"67\") (Connect (Vertex \"68\") (Vertex \"69\"))) (Vertex \"70\")))) (Vertex \"71\")))) (Connect (Vertex \"72\") (Overlay (Connect (Connect (Connect (Overlay (Vertex \"73\") (Vertex \"74\")) (Vertex \"75\")) (Connect (Vertex \"76\") (Overlay (Vertex \"77\") (Connect (Vertex \"78\") (Vertex \"79\"))))) (Vertex \"80\")) (Vertex \"81\"))))) (Vertex \"82\"))) (Overlay (Overlay (Connect (Overlay (Vertex \"83\") (Connect (Overlay (Overlay (Vertex \"84\") (Connect (Connect (Vertex \"85\") (Connect (Vertex \"86\") (Overlay (Overlay (Connect (Vertex \"87\") (Vertex \"88\")) (Vertex \"89\")) (Vertex \"90\")))) (Overlay (Overlay (Overlay (Overlay (Vertex \"91\") (Vertex \"92\")) (Vertex \"93\")) (Connect (Vertex \"94\") (Vertex \"95\"))) (Vertex \"96\")))) (Vertex \"97\")) (Vertex \"98\"))) (Vertex \"99\")) (Vertex \"100\")) (Vertex \"101\"))) (Vertex \"102\"))) (Vertex \"103\")))))) (Vertex \"104\"))) (Vertex \"105\")) (Vertex \"106\"))))))) (Vertex \"107\")) (Vertex \"108\")))"
 inputTestData = (Overlay (Connect (Connect (Connect (Vertex 1) (Connect (Vertex 2) (Vertex 3))) (Vertex 4)) (Overlay (Overlay (Overlay (Vertex 5) (Vertex 6)) (Connect (Connect (Vertex 7) (Connect (Overlay (Connect (Overlay (Connect (Vertex 8) (Connect (Vertex 9) (Vertex 10))) (Vertex 11)) (Vertex 12)) (Vertex 13)) (Vertex 14))) (Vertex 15))) (Overlay (Vertex 16) (Connect (Overlay (Connect (Vertex 17) (Connect (Overlay (Vertex 18) (Vertex 19)) (Vertex 20))) (Vertex 21)) (Overlay (Overlay (Overlay (Vertex 22) (Vertex 23)) (Connect (Connect (Vertex 24) (Vertex 25)) (Vertex 26))) (Vertex 27)))))) (Vertex 28))
 
-colourTest :: Int -> Colour Double
-colourTest i
-    | odd i = red
-    | otherwise = cyan
+
 
