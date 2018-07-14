@@ -17,18 +17,8 @@ import Diagrams.Path
 import Data.List
 import Data.Maybe
 
--- data PGraph a = PGraph [a] [(a, a)] deriving (Show)
 
 type ConnectList a = [(a,[a])]
-
--- getVertices :: (Show a, Eq a) => Graph a -> PGraph a
--- getVertices (Vertex a) = PGraph [a] []
--- getVertices (Overlay a b) = PGraph (nA ++ nB) (cA ++ cB)
---     where (PGraph nA cA) = getVertices a
---           (PGraph nB cB) = getVertices b
--- getVertices (Connect a b) = PGraph (nA ++ nB) ([(aA, bB) | aA <- nA, bB <- nB] ++ cA ++ cB)
---     where (PGraph nA cA) = getVertices a
---           (PGraph nB cB) = getVertices b
 
 connectedFrom :: (Show a, Eq a) => [(a,a)] -> ConnectList a
 connectedFrom [(a,b),(x,y)]
@@ -146,7 +136,7 @@ visualiseDAG g = mconcat connectedDiagram # frame 0.1
           names = nub namesWDuplicates
           (ProcessedGraph namesWDuplicates connections) = getVertices g
 
-drawDAG :: (Show a) => FilePath -> (Maybe Double, Maybe Double) -> Graph a -> IO ()
+drawDAG :: (Show a) => FilePath -> Dimensions -> Graph a -> IO ()
 drawDAG path (w,h) g = renderSVG path (mkSizeSpec2D w h) $ visualiseDAG graphToString
     where graphToString = show <$> g
 
