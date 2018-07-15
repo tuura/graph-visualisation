@@ -2,25 +2,22 @@
 {-# LANGUAGE FlexibleContexts          #-}
 {-# LANGUAGE TypeFamilies              #-}
 
-module Visualise.VisHierarchical (
+module Visualise.Hierarchical (
+    Settings(..),
+
     drawHierarchical
 ) where
 
 import Algebra.Graph hiding ((===))
 import Visualise
 import Diagrams.Prelude
-import Diagrams.Backend.SVG.CmdLine
-import Diagrams.Backend.SVG         (renderSVG)
+import Diagrams.Backend.SVG
 
--- data Graph a = Vertex a | Overlay (Graph a) (Graph a) | Connect (Graph a) (Graph a) deriving (Show, Read)
-
-data Settings = Settings { colF :: (Int -> Colour Double)
+data Settings = Settings { colF :: Int -> Colour Double
                          , bgOp :: Double
                          , dynamicHead :: Measure Double
                          , dynamicThick :: Measure Double
                          }
-
-
 
 node :: String -> Diagram B 
 node n = text n # href ("javascript:alert(\"Node " ++ n ++ "\")") # fontSizeL 0.4 <> circle 0.7 # lwL 0.05 # named n
@@ -39,11 +36,11 @@ visualiseHier g@(Connect g1 g2) l s = (arrowed <> boundingRect arrowed # fc (col
           drawn = (visualiseHier g1 (l + 1) s ||| strutX 1 ||| visualiseHier g2 (l + 1) s) # frame 0.2
           arrowOpts = with & headLength .~ dynamicHead s & shaftStyle %~ lw (dynamicThick s)
 
-drawHierarchical :: (Show a) => FilePath -> (Maybe Double, Maybe Double) -> Graph a -> IO ()
-drawHierarchical path dim g = drawHierarchical' defaultSettings path dim g
+drawHierarchical :: (Show a) => FilePath -> Dimensions -> Graph a -> IO ()
+drawHierarchical = drawHierarchical' defaultSettings
 
-drawHierarchical' :: (Show a) => Settings -> FilePath -> (Maybe Double, Maybe Double) -> Graph a -> IO ()
-drawHierarchical' s path (w,h) g = renderSVG path (mkSizeSpec2D w h) $ visualiseHier g 0 s # frame 0.1
+drawHierarchical' :: (Show a) => Settings -> FilePath -> Dimensions -> Graph a -> IO ()
+drawHierarchical' s path dims g = draw path dims $ visualiseHier g 0 s # frame 0.1
 
 defaultSettings :: Settings
 defaultSettings = Settings alternatingColour 0.7 (dynamicStyle normal entireSize) (dynamicStyle thin entireSize)
@@ -55,7 +52,7 @@ alternatingColour i
     | otherwise = cyan
 
 
-main = mainWith $ visualiseHier inputTestData 0 defaultSettings # frame 0.2
+-- main = mainWith $ visualiseHier inputTestData 0 defaultSettings # frame 0.2
 
 -- Test data:
 

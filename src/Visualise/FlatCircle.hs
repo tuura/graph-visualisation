@@ -3,15 +3,16 @@
 {-# LANGUAGE TypeFamilies              #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 
-module Visualise.VisFlatCircle (
+module Visualise.FlatCircle (
+    Settings(..),
+
     drawFlatCircle
 ) where
 
 import Algebra.Graph
 import Visualise
 import Diagrams.Prelude
-import Diagrams.Backend.SVG.CmdLine
-import Diagrams.Backend.SVG         (renderSVG)
+import Diagrams.Backend.SVG
 import Diagrams.Path
 import Data.Char
 import Data.List
@@ -25,10 +26,10 @@ layoutPoly :: (V t ~ V2, TrailLike t) => Int -> t
 layoutPoly n = regPoly n 1
 
 node :: String -> Diagram B
-node n = text n # fontSizeL 0.1 # href ("javascript:alert(\"Node " ++ n ++ "\")") <> circle 0.05 # named n
+node n = text n # fontSizeL 0.1 # href ("javascript:alert(\"Node " ++ n ++ "\")") <> circle 0.1 # named n
 
 visualiseFlatCircle :: (Show a) => Graph a -> Settings -> Diagram B
-visualiseFlatCircle g s = mconcat $ connected
+visualiseFlatCircle g s = mconcat connected
     where connected = map (\(a,b) -> connectOutside' arrowOpts a b diag) connections
           diag = atPoints vertices (node <$> names)
           vertices = trailVertices layout
@@ -39,11 +40,11 @@ visualiseFlatCircle g s = mconcat $ connected
           arrowOpts = with & headLength .~ dynamicHead s & shaftStyle %~ lw (dynamicThick s)
 
 
-drawFlatCircle :: (Show a) => FilePath -> (Maybe Double, Maybe Double) -> Graph a -> IO ()
-drawFlatCircle path dim g = drawFlatCircle' defaultSettings path dim g
+drawFlatCircle :: (Show a) => FilePath -> Dimensions -> Graph a -> IO ()
+drawFlatCircle = drawFlatCircle' defaultSettings
 
-drawFlatCircle' :: (Show a) => Settings -> FilePath -> (Maybe Double, Maybe Double) -> Graph a -> IO ()
-drawFlatCircle' s path (w,h) g = renderSVG path (mkSizeSpec2D w h) $ visualiseFlatCircle g s # frame 0.1
+drawFlatCircle' :: (Show a) => Settings -> FilePath -> Dimensions -> Graph a -> IO ()
+drawFlatCircle' s path (w,h) g = draw path dims $ visualiseFlatCircle g s # frame 0.1
 
 defaultSettings :: Settings
 defaultSettings = Settings (dynamicStyle normal $ countVertices inputTestData) (dynamicStyle thin $ countVertices inputTestData)

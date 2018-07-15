@@ -4,39 +4,17 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
-module Visualise.VisDAG (
+module Visualise.DAG (
     drawDAG
 ) where
 
 import Visualise
 import Algebra.Graph
 import Diagrams.Prelude
--- import Diagrams.Backend.SVG.CmdLine
 import Diagrams.Backend.SVG
 import Diagrams.Path
 import Data.List
 import Data.Maybe
-
-
-type ConnectList a = [(a,[a])]
-
-connectedFrom :: (Show a, Eq a) => [(a,a)] -> ConnectList a
-connectedFrom [(a,b),(x,y)]
-  | b == y = [(b,[a,x])]
-  | otherwise = (b,[a]) : [(y,[x])]
-connectedFrom l@((x,y):zs) = (y,incoming) : if not (null remaining) then connectedFrom remaining else []
-    where remaining = zs \\ filtered
-          incoming = foldr (\(a,b) acc -> a : acc) [] filtered
-          filtered = filter (\(a,b) -> b == y) l
-
-connectedTo :: (Show a, Eq a) => [(a,a)] -> ConnectList a
-connectedTo [(a,b),(x,y)]
-  | a == x = [(a,[b,y])]
-  | otherwise = (a,[b]) : [(x,[y])]
-connectedTo l@((x,y):zs) = (x,outgoing) : if not (null remaining) then connectedTo remaining else []
-    where remaining = zs \\ filtered
-          outgoing = foldr (\(a,b) acc -> b : acc) [] filtered
-          filtered = filter (\(a,b) -> a == x) l
 
 reduction :: (Show a, Eq a) => ConnectList a -> ConnectList a -> ConnectList a
 reduction [] _ = []
@@ -96,7 +74,7 @@ node :: String -> Diagram B
 node n = (text n # fontSizeL 0.1 # href ("javascript:alert(\"Node " ++ n ++ "\")") <> circle 0.1) # named n
 
 layerDiff :: (Show a, Eq a) => a -> a -> [[a]] -> Int
-layerDiff a b l = (fst (foldGraphLayers a l) - fst (foldGraphLayers b l))
+layerDiff a b l = fst (foldGraphLayers a l) - fst (foldGraphLayers b l)
 
 isElemOnLeft :: (Show a, Eq a) => a -> [[a]] -> Bool
 isElemOnLeft x l = snd $ foldGraphLayers x l
@@ -110,7 +88,7 @@ foldGraphLayers x l = let ((_,layerNum), isLeft) = fold in (layerNum, isLeft)
 
 isOnLeftOfLayer :: Int -> Int -> Bool
 isOnLeftOfLayer x y
-    | fromIntegral x < (fromIntegral y)/2 = True
+    | fromIntegral x < fromIntegral y/2 = True
     | otherwise = False
 
 visualiseLayers :: [[String]] -> Diagram SVG
@@ -137,7 +115,7 @@ visualiseDAG g = mconcat connectedDiagram # frame 0.1
           (ProcessedGraph namesWDuplicates connections) = getVertices g
 
 drawDAG :: (Show a) => FilePath -> Dimensions -> Graph a -> IO ()
-drawDAG path (w,h) g = renderSVG path (mkSizeSpec2D w h) $ visualiseDAG graphToString
+drawDAG path dims g = draw path dims $ visualiseDAG graphToString
     where graphToString = show <$> g
 
 -- main = mainWith $ drawDAG inputTestData
