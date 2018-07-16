@@ -43,7 +43,7 @@ drawHier' :: (Show a) => Settings -> Graph a -> Diagram B
 drawHier' s g = visualiseHier g 0 s # frame 0.1
 
 defaultSettings :: Graph a -> Settings
-defaultSettings g = Settings alternatingColour 0.7 (dynamicStyle normal entireSize) (dynamicStyle thin entireSize)
+defaultSettings g = Settings alternatingColour 1 (dynamicStyle normal entireSize) (dynamicStyle thin entireSize)
     where entireSize = countVertices g
 
 alternatingColour :: Int -> Colour Double

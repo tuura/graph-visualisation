@@ -49,7 +49,7 @@ drawHier' s g = visualiseHier g 0 s # frame 0.1
 -- drawHierarchical' s path dims g = draw path dims $ visualiseHier g 0 s # frame 0.1
 
 defaultSettings :: Settings
-defaultSettings = Settings alternatingColour 0.7 (dynamicStyle normal entireSize) (dynamicStyle thin entireSize)
+defaultSettings = Settings alternatingColour 1 (dynamicStyle normal entireSize) (dynamicStyle thin entireSize)
     where entireSize = countVertices inputTestData
 
 alternatingColour :: Int -> Colour Double
