@@ -73,4 +73,4 @@ As required, the graphs are of the type defined in `Algebra.Graph`:
 
 ## Results
 
-<img src="examples/DAG_example_1.svg" width=50% />
+<img src="examples/DAG_example_1.svg" width="50%" />
