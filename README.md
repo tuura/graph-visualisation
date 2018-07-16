@@ -64,13 +64,8 @@ Settings { colF :: Int -> Colour Double
 ## GraphGen
 GraphGen is a small Java program which generates a random graph to be used for testing with a given number of layers.
 
-A set of graphs will be drawn by each of the algorithms
-## The graphs
-As required, the graphs are of the type defined in `Algebra.Graph`:
-*
-*
-*
-
-## Results
-
+## Example Drawings
+A set of graphs will be drawn by each of the algorithms, as required, the graphs are of the type defined in `Algebra.Graph`:
+* (1 * ((2 * ((4 * 7) + (5 * 7))) + (3 * (6 * (5 * 7)))))
 <img src="examples/DAG_example_1.svg" width="50%" />
+<img src="examples/flat_circle_example_1.svg" width="50%" />
