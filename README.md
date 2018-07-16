@@ -31,7 +31,7 @@ The two drawing functions are `drawFlatAdaptive` and `drawFlatAdaptive'` with th
 * Arrows crossing each other
 
 ## Directed Acyclic Graphs
-Directed graphs with no cycles can be drawn as trees using the `Visualise.DAG` module, using the Coffman-Graham algorithm to produce the layout. The indirect dependancies are removed/reduced in order to simplify the graph before topological ordering using Kahn's algorithm is carried out, then the nodes are drawn in layers and connected.
+Partial order directed graphs with no cycles can be drawn as trees using the `Visualise.DAG` module, using the Coffman-Graham algorithm to produce the layout. The indirect dependancies are removed/reduced in order to simplify the graph (so therefore the graph has to be a partial order graph) before topological ordering using Kahn's algorithm is carried out, then the nodes are drawn in layers and connected.
 
 The functions `drawDAG` and `drawDAG'` can be used to draw the graph, with the adjustable settings again being the same as `Visualise.FlatCircle` and `Visualise.FlatAdaptive`.
 
@@ -66,6 +66,10 @@ GraphGen is a small Java program which generates a random graph to be used for t
 
 ## Example Drawings
 A set of graphs will be drawn by each of the algorithms, as required, the graphs are of the type defined in `Algebra.Graph`:
-* (1 * ((2 * ((4 * 7) + (5 * 7))) + (3 * (6 * (5 * 7)))))
-<img src="examples/DAG_example_1.svg" width="50%" />
-<img src="examples/flat_circle_example_1.svg" width="50%" />
+* Firstly the partial order graph `(1 * ((2 * ((4 * 7) + (5 * 7))) + (3 * (6 * (5 * 7)))))`
+### With `Visualise.DAG`
+<img src="examples/DAG_example_1.svg" style="display: block; margin-left: auto; margin-right: auto; width: 50%;" />
+### With `Visualise.FlatCircle`
+<img src="examples/flat_circle_example_1.svg" />
+### With `Visualise.FlatAdaptive`
+<img src="examples/flat_adaptive_example_1.svg" />
