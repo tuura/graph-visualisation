@@ -5,6 +5,8 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 
 module Visualise.DAG (
+    Settings,
+
     drawDAG
 ) where
 
@@ -15,6 +17,10 @@ import Diagrams.Backend.SVG
 import Diagrams.Path
 import Data.List
 import Data.Maybe
+
+data Settings = Settings { dynamicHead :: Measure Double
+                         , dynamicThick :: Measure Double
+                     }
 
 reduction :: (Show a, Eq a) => ConnectList a -> ConnectList a -> ConnectList a
 reduction [] _ = []
@@ -102,11 +108,11 @@ connectNodes arrowOptsF n1 n2 levelled isLeft = connectPerim' arrowOptsF n1 n2 d
 getArrowPoints :: Maybe Bool -> a -> a -> a -> a
 getArrowPoints isLeft a b c = if isJust isLeft then let (Just left) = isLeft in if left then a else b else c
 
-visualiseDAG :: Graph String -> Diagram SVG
-visualiseDAG g = mconcat connectedDiagram # frame 0.1
+visualiseDAG :: Settings -> Graph String -> Diagram SVG
+visualiseDAG s g = mconcat connectedDiagram # frame 0.1
     where connectedDiagram = map (\(a,b) -> (if abs (layerDiff a b levelled) > 1 then connectNodes (arrowOpts2 a) a b levelled $ Just (isLeft a) else connectNodes arrowOpts1 a b levelled Nothing)) $ reducedConnections reduced
-          arrowOpts1 = with
-          arrowOpts2 a = if isLeft a then with & arrowShaft .~ arc xDir (3/12 @@ turn) else with & arrowShaft .~ arc xDir (-3/12 @@ turn)
+          arrowOpts1 = with & headLength .~ dynamicHead s & shaftStyle %~ lw (dynamicThick s)
+          arrowOpts2 a = arrowOpts1 & if isLeft a then arrowShaft .~ arc xDir (3/12 @@ turn) else arrowShaft .~ arc xDir (-3/12 @@ turn)
           isLeft a = isElemOnLeft a levelled
           levelled = reverse . getLevels topList $ reduced 
           topList = getLevelList (getRoots names reduced) reduced
@@ -115,11 +121,18 @@ visualiseDAG g = mconcat connectedDiagram # frame 0.1
           (ProcessedGraph namesWDuplicates connections) = getVertices g
 
 drawDAG :: (Show a) => FilePath -> Dimensions -> Graph a -> IO ()
-drawDAG path dims g = draw path dims $ visualiseDAG graphToString
+drawDAG = drawDAG' defaultSettings
+
+drawDAG' :: (Show a) => Settings -> FilePath -> Dimensions -> Graph a -> IO ()
+drawDAG' settings path dims g = draw path dims $ visualiseDAG settings graphToString
     where graphToString = show <$> g
+
+defaultSettings :: Settings
+defaultSettings = Settings (dynamicStyle normal $ countVertices inputTestData) 
+                           (dynamicStyle thin $ countVertices inputTestData)
 
 -- main = mainWith $ drawDAG inputTestData
 
-inputTestData :: Graph String
+-- inputTestData :: Graph a
 -- inputTestData = show <$> (Connect (Connect (Connect (Connect (Vertex 1) (Connect (Vertex 2) (Vertex 3))) (Vertex 4)) (Overlay (Overlay (Overlay (Vertex 5) (Vertex 6)) (Connect (Connect (Vertex 7) (Connect (Overlay (Connect (Overlay (Connect (Vertex 8) (Connect (Vertex 9) (Vertex 10))) (Vertex 11)) (Vertex 12)) (Vertex 13)) (Vertex 14))) (Vertex 21))) (Overlay (Vertex 16) (Connect (Overlay (Connect (Vertex 17) (Connect (Overlay (Vertex 18) (Vertex 19)) (Vertex 20))) (Vertex 15)) (Overlay (Overlay (Overlay (Vertex 22) (Vertex 23)) (Connect (Connect (Vertex 24) (Vertex 25)) (Vertex 26))) (Vertex 27)))))) (Vertex 28))
-inputTestData = show <$> Connect (Vertex 1) (Overlay (Connect (Vertex 2) (Overlay (Connect (Vertex 4) (Vertex 7)) (Connect (Vertex 5) (Vertex 7)))) (Connect (Vertex 3) (Connect (Vertex 6) (Connect (Vertex 5) (Vertex 7)))))
+inputTestData = Connect (Vertex 1) (Overlay (Connect (Vertex 2) (Overlay (Connect (Vertex 4) (Vertex 7)) (Connect (Vertex 5) (Vertex 7)))) (Connect (Vertex 3) (Connect (Vertex 6) (Connect (Vertex 5) (Vertex 7)))))
