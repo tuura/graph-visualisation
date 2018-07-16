@@ -6,7 +6,7 @@
 module Visualise.FlatCircle (
     Settings(..),
 
-    drawFlatCircle
+    drawFlatCircle, drawFlatCircle'
 ) where
 
 import Algebra.Graph
@@ -28,8 +28,11 @@ layoutPoly n = regPoly n 1
 node :: String -> Diagram B
 node n = text n # fontSizeL 0.1 # href ("javascript:alert(\"Node " ++ n ++ "\")") <> circle 0.1 # named n
 
-visualiseFlatCircle :: (Show a) => Graph a -> Settings -> Diagram B
-visualiseFlatCircle g s = mconcat connected
+drawFlatCircle :: (Show a) => Graph a -> Diagram B
+drawFlatCircle g = drawFlatCircle' (defaultSettings g) g
+
+drawFlatCircle' :: (Show a) => Settings -> Graph a -> Diagram B
+drawFlatCircle' s g = mconcat connected # frame 0.1
     where connected = map (\(a,b) -> connectOutside' arrowOpts a b diag) connections
           diag = atPoints vertices (node <$> names)
           vertices = trailVertices layout
@@ -40,11 +43,11 @@ visualiseFlatCircle g s = mconcat connected
           arrowOpts = with & headLength .~ dynamicHead s & shaftStyle %~ lw (dynamicThick s)
 
 
-drawFlatCircle :: (Show a) => FilePath -> Dimensions -> Graph a -> IO ()
-drawFlatCircle path dims g = drawFlatCircle' (defaultSettings g) path dims g
+-- drawFlatCircle :: (Show a) => FilePath -> Dimensions -> Graph a -> IO ()
+-- drawFlatCircle path dims g = drawFlatCircle' (defaultSettings g) path dims g
 
-drawFlatCircle' :: (Show a) => Settings -> FilePath -> Dimensions -> Graph a -> IO ()
-drawFlatCircle' s path dims g = draw path dims $ visualiseFlatCircle g s # frame 0.1
+-- drawFlatCircle' :: (Show a) => Settings -> FilePath -> Dimensions -> Graph a -> IO ()
+-- drawFlatCircle' s path dims g = draw path dims $ visualiseFlatCircle g s # frame 0.1
 
 defaultSettings :: Graph a -> Settings
 defaultSettings g = Settings (dynamicStyle normal $ countVertices g) (dynamicStyle thin $ countVertices g)

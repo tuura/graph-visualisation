@@ -7,7 +7,7 @@
 module Visualise.DAG (
     Settings,
 
-    drawDAG
+    drawDAG, drawDAG'
 ) where
 
 import Visualise
@@ -108,8 +108,11 @@ connectNodes arrowOptsF n1 n2 levelled isLeft = connectPerim' arrowOptsF n1 n2 d
 getArrowPoints :: Maybe Bool -> a -> a -> a -> a
 getArrowPoints isLeft a b c = if isJust isLeft then let (Just left) = isLeft in if left then a else b else c
 
-visualiseDAG :: Settings -> Graph String -> Diagram SVG
-visualiseDAG s g = mconcat connectedDiagram # frame 0.1
+drawDAG :: (Show a) => Graph a -> Diagram B
+drawDAG g = drawDAG' (defaultSettings g) g
+
+drawDAG' :: (Show a) => Settings -> Graph a -> Diagram B
+drawDAG' s graph = mconcat connectedDiagram # frame 0.1
     where connectedDiagram = map (\(a,b) -> (if abs (layerDiff a b levelled) > 1 then connectNodes (arrowOpts2 a) a b levelled $ Just (isLeft a) else connectNodes arrowOpts1 a b levelled Nothing)) $ reducedConnections reduced
           arrowOpts1 = with & headLength .~ dynamicHead s & shaftStyle %~ lw (dynamicThick s)
           arrowOpts2 a = arrowOpts1 & if isLeft a then arrowShaft .~ arc xDir (3/12 @@ turn) else arrowShaft .~ arc xDir (-3/12 @@ turn)
@@ -119,13 +122,14 @@ visualiseDAG s g = mconcat connectedDiagram # frame 0.1
           reduced = reduction (connectedFrom connections) []
           names = nub namesWDuplicates
           (ProcessedGraph namesWDuplicates connections) = getVertices g
+          g = show <$> graph
 
-drawDAG :: (Show a) => FilePath -> Dimensions -> Graph a -> IO ()
-drawDAG path dims g = drawDAG' (defaultSettings g) path dims g
+-- drawDAG :: (Show a) => FilePath -> Dimensions -> Graph a -> IO ()
+-- drawDAG path dims g = drawDAG' (defaultSettings g) path dims g
 
-drawDAG' :: (Show a) => Settings -> FilePath -> Dimensions -> Graph a -> IO ()
-drawDAG' s path dims g = draw path dims $ visualiseDAG s graphToString
-    where graphToString = show <$> g
+-- drawDAG' :: (Show a) => Settings -> FilePath -> Dimensions -> Graph a -> IO ()
+-- drawDAG' s path dims g = draw path dims $ visualiseDAG s graphToString
+--     where graphToString = show <$> g
 
 defaultSettings :: Graph a -> Settings
 defaultSettings g = Settings (dynamicStyle normal $ countVertices g) 

@@ -6,7 +6,7 @@
 module Visualise.FlatAdaptive (
     Settings (..),
 
-    drawFlatAdaptive
+    drawFlatAdaptive, drawFlatAdaptive'
 ) where
 
 import Visualise
@@ -76,16 +76,6 @@ initialPositions :: Int -> [String] -> Diagram B
 initialPositions 1 n = cat' (r2 (-1,1)) (with & catMethod .~ Distrib & sep .~ 0.5) $ node <$> n
 initialPositions 2 n = hsep 0.3 $ node <$> n
 
-visualiseFlatAdaptive :: Settings -> Graph String -> Diagram B
-visualiseFlatAdaptive s g = foldr (\(a,b) acc -> drawArrow s a b acc) outDiag connections
-    where outDiag = overlayedDiagram ||| strutX 0.1 ||| connectedDiagram
-          overlayedDiagram = overlayedOnlyDiagram names connectedNames
-          connectedDiagram = connectedOnlyDiagram connectedNames connections . initialPositions (initPos s) $ connectedNames
-          connectedNames = listConnectedOnly connections
-          names = nub namesWDup
-          connections = nub connectionsWDup
-          (ProcessedGraph namesWDup connectionsWDup) = getVertices g
-
 connectedOnlyDiagram :: (Show a, IsName a) => [a] -> [(a,a)] -> Diagram B -> Diagram B
 connectedOnlyDiagram names connections initialDiagram = layoutGroups initialDiagram names $ getGroups (connected names connections)
 
@@ -95,18 +85,33 @@ overlayedOnlyDiagram names connectedOnlyList = hsep 0.2 $ node <$> (names \\ con
 listConnectedOnly :: (Show a, Eq a) => [(a,a)] -> [a]
 listConnectedOnly connections = nub $ foldr (\(a,bs) acc -> a : bs ++ acc) [] (connectedTo connections ++ connectedFrom connections)
 
-drawFlatAdaptive :: (Show a) => FilePath -> Dimensions -> Graph a -> IO ()
-drawFlatAdaptive path dims g = drawFlatAdaptive' (defaultSettings g) path dims g
+drawFlatAdaptive :: (Show a) => Graph a -> Diagram B
+drawFlatAdaptive g = drawFlatAdaptive' (defaultSettings g) g
 
-drawFlatAdaptive' :: (Show a) => Settings -> FilePath -> Dimensions -> Graph a -> IO ()
-drawFlatAdaptive' s path dims g = draw path dims $ visualiseFlatAdaptive s graphToString # frame 0.1
-    where graphToString = show <$> g
+drawFlatAdaptive' :: (Show a) => Settings -> Graph a -> Diagram B
+drawFlatAdaptive' s graph = (foldr (\(a,b) acc -> drawArrow s a b acc) outDiag connections) # frame 0.1
+    where outDiag = overlayedDiagram ||| strutX 0.1 ||| connectedDiagram
+          overlayedDiagram = overlayedOnlyDiagram names connectedNames
+          connectedDiagram = connectedOnlyDiagram connectedNames connections . initialPositions (initPos s) $ connectedNames
+          connectedNames = listConnectedOnly connections
+          names = nub namesWDup
+          connections = nub connectionsWDup
+          (ProcessedGraph namesWDup connectionsWDup) = getVertices g
+          g = show <$> graph
+
+-- drawFlatAdaptive :: (Show a) => FilePath -> Dimensions -> Graph a -> Diagram B
+-- drawFlatAdaptive path dims g = drawFlatAdaptive' (defaultSettings g) path dims g
+
+-- drawFlatAdaptive' :: (Show a) => Settings -> FilePath -> Dimensions -> Diagram B
+-- drawFlatAdaptive' s path dims g = draw path dims $ visualiseFlatAdaptive s g # frame 0.1
 
 
 defaultSettings :: Graph a -> Settings
 defaultSettings g = Settings (dynamicStyle small $ countVertices g) 
                              (dynamicStyle thin $ countVertices g)
                              1
+
+-- main = draw "../tests/test_sep.svg" (Just 1000,Nothing) $ drawFlatAdaptive (Overlay (Connect (Connect (Connect (Vertex 1) (Connect (Vertex 2) (Vertex 3))) (Vertex 4)) (Overlay (Overlay (Overlay (Vertex 5) (Vertex 6)) (Connect (Connect (Vertex 7) (Connect (Overlay (Connect (Overlay (Connect (Vertex 8) (Connect (Vertex 9) (Vertex 10))) (Vertex 11)) (Vertex 12)) (Vertex 13)) (Vertex 14))) (Vertex 15))) (Overlay (Vertex 16) (Connect (Overlay (Connect (Vertex 17) (Connect (Overlay (Vertex 18) (Vertex 19)) (Vertex 20))) (Vertex 21)) (Overlay (Overlay (Overlay (Vertex 22) (Vertex 23)) (Connect (Connect (Vertex 24) (Vertex 25)) (Vertex 26))) (Vertex 27)))))) (Vertex 28))
 
 
 -- main = mainWith $ visualiseFlatAdaptive defaultSettings (show <$> inputTestData) # frame 0.1

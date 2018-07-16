@@ -17,8 +17,8 @@ type Dimensions = (Maybe Double, Maybe Double)
 
 type ConnectList a = [(a,[a])]
 
-draw :: FilePath -> Dimensions -> Diagram SVG -> IO ()
-draw path (w,h) = renderSVG path (mkSizeSpec2D w h)
+draw :: FilePath -> Dimensions -> Diagram B -> IO ()
+draw path (w,h) d = renderSVG path (mkSizeSpec2D w h) d
 
 countVertices :: Graph a -> Measure Double
 countVertices (Vertex a) = 1
