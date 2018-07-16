@@ -29,7 +29,7 @@ layoutPoly :: (V t ~ V2, TrailLike t) => Int -> t
 layoutPoly n = regPoly n 0.5
 
 layoutVertices :: Int -> [Point V2 Double]
-layoutVertices n = trailVertices $ regPoly n 0.5
+layoutVertices n = trailVertices $ regPoly n 1
 
 node :: String -> Diagram B
 node n = (text n # fontSizeL 0.1 # href ("javascript:alert(\"Node " ++ n ++ "\")") <> circle 0.1) # named n
@@ -91,8 +91,8 @@ overlayedOnlyDiagram names connectedOnlyList = hsep 0.2 $ node <$> (names \\ con
 listConnectedOnly :: (Show a, Eq a) => [(a,a)] -> [a]
 listConnectedOnly connections = nub $ foldr (\(a,bs) acc -> a : bs ++ acc) [] (connectedTo connections ++ connectedFrom connections)
 
-drawFlatAdaptive :: (Show a) => Settings -> FilePath -> Dimensions -> Graph a -> IO ()
-drawFlatAdaptive s = drawFlatAdaptive' s
+drawFlatAdaptive :: (Show a) => FilePath -> Dimensions -> Graph a -> IO ()
+drawFlatAdaptive = drawFlatAdaptive' defaultSettings
 
 drawFlatAdaptive' :: (Show a) => Settings -> FilePath -> Dimensions -> Graph a -> IO ()
 drawFlatAdaptive' s path dims g = draw path dims $ visualiseFlatAdaptive defaultSettings graphToString # frame 0.1
