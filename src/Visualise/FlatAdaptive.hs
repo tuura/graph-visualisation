@@ -77,10 +77,11 @@ initialPositions 1 n = cat' (r2 (-1,1)) (with & catMethod .~ Distrib & sep .~ 0.
 initialPositions 2 n = hsep 0.3 $ node <$> n
 
 visualiseFlatAdaptive :: Settings -> Graph String -> Diagram B
-visualiseFlatAdaptive s g = mconcat $ (\(a,b) -> drawArrow s a b outDiag) <$> connections
+visualiseFlatAdaptive s g = foldr (\(a,b) acc -> drawArrow s a b acc) outDiag connections
     where outDiag = overlayedDiagram ||| strutX 0.1 ||| connectedDiagram
-          overlayedDiagram = overlayedOnlyDiagram names . listConnectedOnly $ connections
-          connectedDiagram = connectedOnlyDiagram names connections . initialPositions (initPos s) $ names
+          overlayedDiagram = overlayedOnlyDiagram names connectedNames
+          connectedDiagram = connectedOnlyDiagram connectedNames connections . initialPositions (initPos s) $ connectedNames
+          connectedNames = listConnectedOnly connections
           names = nub namesWDup
           connections = nub connectionsWDup
           (ProcessedGraph namesWDup connectionsWDup) = getVertices g
@@ -95,20 +96,20 @@ listConnectedOnly :: (Show a, Eq a) => [(a,a)] -> [a]
 listConnectedOnly connections = nub $ foldr (\(a,bs) acc -> a : bs ++ acc) [] (connectedTo connections ++ connectedFrom connections)
 
 drawFlatAdaptive :: (Show a) => FilePath -> Dimensions -> Graph a -> IO ()
-drawFlatAdaptive = drawFlatAdaptive' defaultSettings
+drawFlatAdaptive path dims g = drawFlatAdaptive' (defaultSettings g) path dims g
 
 drawFlatAdaptive' :: (Show a) => Settings -> FilePath -> Dimensions -> Graph a -> IO ()
-drawFlatAdaptive' s path dims g = draw path dims $ visualiseFlatAdaptive defaultSettings graphToString # frame 0.1
+drawFlatAdaptive' s path dims g = draw path dims $ visualiseFlatAdaptive s graphToString # frame 0.1
     where graphToString = show <$> g
 
 
-defaultSettings :: Settings
-defaultSettings = Settings (dynamicStyle normal $ countVertices inputTestData) 
-                           (dynamicStyle thin $ countVertices inputTestData)
-                           1
+defaultSettings :: Graph a -> Settings
+defaultSettings g = Settings (dynamicStyle small $ countVertices g) 
+                             (dynamicStyle thin $ countVertices g)
+                             1
 
 
-main = mainWith $ visualiseFlatAdaptive defaultSettings (show <$> inputTestData) # frame 0.1
+-- main = mainWith $ visualiseFlatAdaptive defaultSettings (show <$> inputTestData) # frame 0.1
 -- main = mainWith $ visualiseFlatAdaptive () inputTestData # frame 0.1
 
 -- inputTestData = Connect (Connect (Vertex "a") (Overlay (Vertex "b") (Vertex "c"))) (Connect (Vertex "d") (Vertex "e"))

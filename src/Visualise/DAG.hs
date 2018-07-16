@@ -121,15 +121,15 @@ visualiseDAG s g = mconcat connectedDiagram # frame 0.1
           (ProcessedGraph namesWDuplicates connections) = getVertices g
 
 drawDAG :: (Show a) => FilePath -> Dimensions -> Graph a -> IO ()
-drawDAG = drawDAG' defaultSettings
+drawDAG path dims g = drawDAG' (defaultSettings g) path dims g
 
 drawDAG' :: (Show a) => Settings -> FilePath -> Dimensions -> Graph a -> IO ()
-drawDAG' settings path dims g = draw path dims $ visualiseDAG settings graphToString
+drawDAG' s path dims g = draw path dims $ visualiseDAG s graphToString
     where graphToString = show <$> g
 
-defaultSettings :: Settings
-defaultSettings = Settings (dynamicStyle normal $ countVertices inputTestData) 
-                           (dynamicStyle thin $ countVertices inputTestData)
+defaultSettings :: Graph a -> Settings
+defaultSettings g = Settings (dynamicStyle normal $ countVertices g) 
+                           (dynamicStyle thin $ countVertices g)
 
 -- main = mainWith $ drawDAG inputTestData
 

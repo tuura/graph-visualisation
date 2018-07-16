@@ -41,13 +41,13 @@ visualiseFlatCircle g s = mconcat connected
 
 
 drawFlatCircle :: (Show a) => FilePath -> Dimensions -> Graph a -> IO ()
-drawFlatCircle = drawFlatCircle' defaultSettings
+drawFlatCircle path dims g = drawFlatCircle' (defaultSettings g) path dims g
 
 drawFlatCircle' :: (Show a) => Settings -> FilePath -> Dimensions -> Graph a -> IO ()
-drawFlatCircle' s path (w,h) g = draw path dims $ visualiseFlatCircle g s # frame 0.1
+drawFlatCircle' s path dims g = draw path dims $ visualiseFlatCircle g s # frame 0.1
 
-defaultSettings :: Settings
-defaultSettings = Settings (dynamicStyle normal $ countVertices inputTestData) (dynamicStyle thin $ countVertices inputTestData)
+defaultSettings :: Graph a -> Settings
+defaultSettings g = Settings (dynamicStyle normal $ countVertices g) (dynamicStyle thin $ countVertices g)
 
 -- main = mainWith $ visualiseFlatCircle () inputTestData # frame 0.1
 

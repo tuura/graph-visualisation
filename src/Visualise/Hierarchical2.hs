@@ -37,14 +37,14 @@ visualiseHier g@(Connect g1 g2) l s = (arrowed <> boundingRect arrowed # fc (col
           arrowOpts = with & headLength .~ dynamicHead s & shaftStyle %~ lw (dynamicThick s)
 
 drawHierarchical :: (Show a) => FilePath -> Dimensions -> Graph a -> IO ()
-drawHierarchical path dims g = drawHierarchical' (defaultSettings g) path dims g
+drawHierarchical = drawHierarchical' defaultSettings
 
 drawHierarchical' :: (Show a) => Settings -> FilePath -> Dimensions -> Graph a -> IO ()
 drawHierarchical' s path dims g = draw path dims $ visualiseHier g 0 s # frame 0.1
 
-defaultSettings :: Graph a -> Settings
-defaultSettings g = Settings alternatingColour 0.7 (dynamicStyle normal entireSize) (dynamicStyle thin entireSize)
-    where entireSize = countVertices g
+defaultSettings :: Settings
+defaultSettings = Settings alternatingColour 0.7 (dynamicStyle normal entireSize) (dynamicStyle thin entireSize)
+    where entireSize = countVertices inputTestData
 
 alternatingColour :: Int -> Colour Double
 alternatingColour i
