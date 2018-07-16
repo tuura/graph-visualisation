@@ -22,13 +22,14 @@ This enables the arrow shafts and head sizes to be customised. When the standard
 ### Issues
 * Currently does not work for nodes with self-connected loops
 
-## General Flat Graphs
+## Adaptive Layout Flat Graphs
 The `Visualise.FlatAdaptive` module tries to represent any flat graph in a readable way however needs more work to be fully functioning.
-The two drawing functions are `drawFlatAdaptive` and `drawFlatAdaptive'` with the same settings adjustments available as `Visualise.FlatCircle`. Currently this module can work well with some graphs but not with others.
+The two drawing functions are `drawFlatAdaptive` and `drawFlatAdaptive'` with the same settings adjustments available as `Visualise.FlatCircle` plus an integer (default 1) that determines the layout mode by adjusting the initial placement of the nodes before the algorithm is executed. Currently this module can work well with some graphs but not with others.
 
 ### Issues
 * Collisions between nodes
 * Arrows crossing each other
+* Some nodes missing
 
 ## Directed Acyclic Graphs
 Partial order directed graphs with no cycles can be drawn as trees using the `Visualise.DAG` module, using the Coffman-Graham algorithm to produce the layout. The indirect dependancies are removed/reduced in order to simplify the graph (so therefore the graph has to be a partial order graph) before topological ordering using Kahn's algorithm is carried out, then the nodes are drawn in layers and connected.

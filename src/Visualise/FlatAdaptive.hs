@@ -23,6 +23,7 @@ newtype Graphs a = Graphs [ProcessedGraph a] deriving (Show)
 
 data Settings = Settings { dynamicHead :: Measure Double
                          , dynamicThick :: Measure Double
+                         , initPos :: Int
                      }
 
 layoutPoly :: (V t ~ V2, TrailLike t) => Int -> t
@@ -52,17 +53,17 @@ oneConn :: (Show a, Eq a) => ConnectList a -> a -> Maybe (a,[a])
 oneConn l n = find (\(x,y) -> x == n && length y == 1) l
 
 getGroups :: (Show a, Eq a) => ConnectList a -> ConnectList a
-getGroups = sortBy (flip compare `on` length . snd)
+getGroups = sortBy (compare `on` length . snd)
 
 layoutGroups :: (Show a, Eq a, IsName a) => Diagram B -> [a] -> ConnectList a -> Diagram B
-layoutGroups d n [] = d
-layoutGroups d n groups@(x@(a,bs):xs)
-    | null xs = makeGroup d x (n \\ (a:bs))
-    | otherwise = layoutGroups (makeGroup d x (n \\ (a:bs))) n xs
+layoutGroups d n [] = mempty
+layoutGroups d n ((a,bs):xs)
+    | null xs = makeGroup d (a:bs) (n \\ (a:bs))
+    | otherwise = layoutGroups (makeGroup d (a:bs) (n \\ (a:bs))) n xs
 
-makeGroup :: (Show a, Eq a, IsName a) => Diagram B -> (a,[a]) -> [a] -> Diagram B
-makeGroup d c@(x,ys) others = withNames others (\otherSubs d -> 
-        withNames (x:ys) (\subs@(s:ss) d -> moveTo (location s) (atPoints (layoutVertices . length $ subs) $ getSub <$> subs)) d) d
+makeGroup :: (Show a, Eq a, IsName a) => Diagram B -> [a] -> [a] -> Diagram B
+makeGroup d c others = withNames others (\otherSubs d -> 
+        withNames c (\subs@(s:ss) d -> (mconcat $ getSub <$> otherSubs) <> (atPoints (layoutVertices . length $ subs) $ getSub <$> subs)) d) d
           
 drawArrow :: Settings -> String -> String -> Diagram B -> Diagram B
 drawArrow s a b d
@@ -71,16 +72,18 @@ drawArrow s a b d
     where arrowOpts1 = with & headLength .~ dynamicHead s & shaftStyle %~ lw (dynamicThick s)
           arrowOpts2 = with & headLength .~ dynamicHead s & shaftStyle %~ lw (dynamicThick s) & arrowShaft .~ arc xDir (4/6 @@ turn)
 
-initialPositions :: [String] -> Diagram B
-initialPositions n = hsep 0.5 $ node <$> n
+initialPositions :: Int -> [String] -> Diagram B
+initialPositions 1 n = cat' (r2 (-1,1)) (with & catMethod .~ Distrib & sep .~ 0.5) $ node <$> n
+initialPositions 2 n = hsep 0.3 $ node <$> n
 
 visualiseFlatAdaptive :: Settings -> Graph String -> Diagram B
 visualiseFlatAdaptive s g = mconcat $ (\(a,b) -> drawArrow s a b outDiag) <$> connections
     where outDiag = overlayedDiagram ||| strutX 0.1 ||| connectedDiagram
           overlayedDiagram = overlayedOnlyDiagram names . listConnectedOnly $ connections
-          connectedDiagram = connectedOnlyDiagram names connections . initialPositions $ names
+          connectedDiagram = connectedOnlyDiagram names connections . initialPositions (initPos s) $ names
           names = nub namesWDup
-          (ProcessedGraph namesWDup connections) = getVertices g
+          connections = nub connectionsWDup
+          (ProcessedGraph namesWDup connectionsWDup) = getVertices g
 
 connectedOnlyDiagram :: (Show a, IsName a) => [a] -> [(a,a)] -> Diagram B -> Diagram B
 connectedOnlyDiagram names connections initialDiagram = layoutGroups initialDiagram names $ getGroups (connected names connections)
@@ -102,6 +105,7 @@ drawFlatAdaptive' s path dims g = draw path dims $ visualiseFlatAdaptive default
 defaultSettings :: Settings
 defaultSettings = Settings (dynamicStyle normal $ countVertices inputTestData) 
                            (dynamicStyle thin $ countVertices inputTestData)
+                           1
 
 
 main = mainWith $ visualiseFlatAdaptive defaultSettings (show <$> inputTestData) # frame 0.1
