@@ -43,7 +43,7 @@ Hierarchical graphs can be drawn using the `Visualise.Hierarchical` module.
 
 When two adjacent graphs are overlayed they are placed next to each other within a box, and when two adjacent graphs are connected their boxes are placed next to each other and connected with an arrow.
 
-The two drawing functions are `drawHierarchical` and `drawHierarchical'`, but this time more settings can be defined when using the `drawHierarchical'` function. As well as arrow and head sizes being user-defineable, the background opacity for the boxes can also be defined (with the type of `Double`) and a background colour choosing function can be supplied. This function is used with each layer to determine the the background colour, and has the type signature `Int -> Colour Double`, where the integer supplied is the depth of the current layer.
+The two drawing functions are `drawHierarchical` and `drawHierarchical'`, but this time more settings can be defined when using the `drawHierarchical'` function. As well as arrow and head sizes being user-defineable, the background opacity for the boxes can also be defined (with the type of `Double`, which can be useful for if the colour for all boxes is the same as it will darken them with each layer) and a background colour choosing function can be supplied. This function is used with each layer to determine the the background colour, and has the type signature `Int -> Colour Double`, where the integer supplied is the depth of the current layer.
 
 The arrow settings defaults are the same as the other drawing modules, the default opacity is `0.7` and the default colour choosing function alternates between blue and red for each layer.
 
@@ -72,3 +72,5 @@ As required, the graphs are of the type defined in `Algebra.Graph`:
 *
 
 ## Results
+
+![testing](examples/DAG_example_1.svg)
