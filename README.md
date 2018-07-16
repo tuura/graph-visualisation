@@ -67,9 +67,14 @@ GraphGen is a small Java program which generates a random graph to be used for t
 ## Example Drawings
 A set of graphs will be drawn by each of the algorithms, as required, the graphs are of the type defined in `Algebra.Graph`:
 * Firstly the partial order graph `(1 * ((2 * ((4 * 7) + (5 * 7))) + (3 * (6 * (5 * 7)))))`
+
 ### With `Visualise.DAG`
-<img src="examples/DAG_example_1.svg" style="display: block; margin-left: auto; margin-right: auto; width: 50%;" />
+<center>
+	<img src="examples/DAG_example_1.svg" width="50%" />
+</center>
+
 ### With `Visualise.FlatCircle`
 <img src="examples/flat_circle_example_1.svg" />
+
 ### With `Visualise.FlatAdaptive`
 <img src="examples/flat_adaptive_example_1.svg" />
