@@ -91,10 +91,12 @@ A set of graphs will be drawn by each of the algorithms, as required, the graphs
 #### With `drawDAG` and `drawDAGPartialOrder` respectively
 
 <table>
-	<tr>
-		<td><img src="examples/DAG_example_1.svg" /></td>
-		<td><img src="examples/DAG_partial_order_example_1.svg" /></td>
-	</tr>
+	<tbody style="border:0px">
+		<tr style="border:0px">
+			<td style="border:0px"><img src="examples/DAG_example_1.svg" /></td>
+			<td style="border:0px"><img src="examples/DAG_partial_order_example_1.svg" /></td>
+		</tr>
+	</tbody>
 </table>
 
 ### With `Visualise.FlatCircle`
