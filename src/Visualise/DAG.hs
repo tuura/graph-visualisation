@@ -7,7 +7,7 @@
 module Visualise.DAG (
     Settings,
 
-    drawDAG, drawDAG'
+    drawDAG, drawDAG', drawDAGPartialOrder, drawDAGPartialOrder'
 ) where
 
 import Visualise
@@ -71,7 +71,8 @@ getEdgesFrom x = foldr (\(a,bs) acc -> if x `elem` bs then a : acc else acc) []
 getLevels :: (Show a, Eq a) => [a] -> [(a,[a])] -> [[a]]
 getLevels [] _ = []
 getLevels l cTo = foldLevel : getLevels (l \\ foldLevel) cTo
-    where foldLevel = fst $ foldr (\x (acc,flag) -> if flag || or ((\a -> dependsOn x a cTo) <$> acc) || any (\a -> dependsOn a x cTo) acc then (acc,True) else (x:acc,False)) ([],False) (reverse l)
+    where foldLevel = fst $ foldr (\x (acc,flag) -> if flag || or ((\a -> dependsOn x a cTo) <$> acc) || any (\a -> dependsOn a x cTo) acc 
+                                                    then (acc,True) else (x:acc,False)) ([],False) (reverse l)
 
 reducedConnections :: (Show a, Eq a) => ConnectList a -> [(a,a)]
 reducedConnections = foldr (\(x,ys) acc -> zip ys (repeat x) ++ acc) []
@@ -105,35 +106,39 @@ connectNodes arrowOptsF n1 n2 levelled isLeft = connectPerim' arrowOptsF n1 n2 d
 getArrowPoints :: Maybe Bool -> a -> a -> a -> a
 getArrowPoints isLeft a b c = if isJust isLeft then let (Just left) = isLeft in if left then a else b else c
 
+drawDAGPartialOrder :: (Show a) => Graph a -> Diagram B
+drawDAGPartialOrder g = drawDAGPartialOrder' (defaultSettings g) g
+
+drawDAGPartialOrder' :: (Show a) => Settings -> Graph a -> Diagram B
+drawDAGPartialOrder' s graph = visualiseDAG s names connections connectionList
+    where connectionList = reduction (connectedFrom connections) []
+          names = nub namesWDuplicates
+          connections = nub connectionsWDuplicates
+          (ProcessedGraph namesWDuplicates connectionsWDuplicates) = getVertices g
+          g = show <$> graph
+
 drawDAG :: (Show a) => Graph a -> Diagram B
 drawDAG g = drawDAG' (defaultSettings g) g
 
 drawDAG' :: (Show a) => Settings -> Graph a -> Diagram B
-drawDAG' s graph = mconcat connectedDiagram # frame 0.1
-    where connectedDiagram = map (\(a,b) -> (if abs (layerDiff a b levelled) > 1 then connectNodes (arrowOpts2 a) a b levelled $ Just (isLeft a) else connectNodes arrowOpts1 a b levelled Nothing)) $ reducedConnections reduced
+drawDAG' s graph = visualiseDAG s names connections connectionList
+    where connectionList = connectedFrom connections
+          names = nub namesWDuplicates
+          connections = nub connectionsWDuplicates
+          (ProcessedGraph namesWDuplicates connectionsWDuplicates) = getVertices g
+          g = show <$> graph
+
+visualiseDAG :: Settings -> [String] -> [(String,String)] -> ConnectList String -> Diagram B
+visualiseDAG s names rawConnections connectionList = mconcat connectedDiagram # frame 0.1
+    where connectedDiagram = map (\(a,b) -> (if abs (layerDiff a b levelled) > 1 
+                                             then connectNodes (arrowOpts2 a) a b levelled $ Just (isLeft a) 
+                                             else connectNodes arrowOpts1 a b levelled Nothing)) rawConnections
           arrowOpts1 = with & headLength .~ dynamicHead s & shaftStyle %~ lw (dynamicThick s)
           arrowOpts2 a = arrowOpts1 & if isLeft a then arrowShaft .~ arc xDir (3/12 @@ turn) else arrowShaft .~ arc xDir (-3/12 @@ turn)
           isLeft a = isElemOnLeft a levelled
-          levelled = reverse . getLevels topList $ reduced 
-          topList = getLevelList (getRoots names reduced) reduced
-          reduced = reduction (connectedFrom connections) []
-          names = nub namesWDuplicates
-          (ProcessedGraph namesWDuplicates connections) = getVertices g
-          g = show <$> graph
-
--- drawDAG :: (Show a) => FilePath -> Dimensions -> Graph a -> IO ()
--- drawDAG path dims g = drawDAG' (defaultSettings g) path dims g
-
--- drawDAG' :: (Show a) => Settings -> FilePath -> Dimensions -> Graph a -> IO ()
--- drawDAG' s path dims g = draw path dims $ visualiseDAG s graphToString
---     where graphToString = show <$> g
+          levelled = reverse . getLevels topList $ connectionList 
+          topList = nub $ getLevelList (getRoots names connectionList) connectionList
 
 defaultSettings :: Graph a -> Settings
 defaultSettings g = Settings (dynamicStyle normal $ countVertices g) 
                            (dynamicStyle thin $ countVertices g)
-
--- main = mainWith $ drawDAG inputTestData
-
--- inputTestData :: Graph a
--- inputTestData = show <$> (Connect (Connect (Connect (Connect (Vertex 1) (Connect (Vertex 2) (Vertex 3))) (Vertex 4)) (Overlay (Overlay (Overlay (Vertex 5) (Vertex 6)) (Connect (Connect (Vertex 7) (Connect (Overlay (Connect (Overlay (Connect (Vertex 8) (Connect (Vertex 9) (Vertex 10))) (Vertex 11)) (Vertex 12)) (Vertex 13)) (Vertex 14))) (Vertex 21))) (Overlay (Vertex 16) (Connect (Overlay (Connect (Vertex 17) (Connect (Overlay (Vertex 18) (Vertex 19)) (Vertex 20))) (Vertex 15)) (Overlay (Overlay (Overlay (Vertex 22) (Vertex 23)) (Connect (Connect (Vertex 24) (Vertex 25)) (Vertex 26))) (Vertex 27)))))) (Vertex 28))
-inputTestData = Connect (Vertex 1) (Overlay (Connect (Vertex 2) (Overlay (Connect (Vertex 4) (Vertex 7)) (Connect (Vertex 5) (Vertex 7)))) (Connect (Vertex 3) (Connect (Vertex 6) (Connect (Vertex 5) (Vertex 7)))))
