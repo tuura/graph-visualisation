@@ -1,5 +1,7 @@
 # graph-visualisation
 # README in progress
+Provided are different ways to draw an algebraic graph (as defined by `Algebra.Graph`) using the Haskell `Diagrams` library.
+
 Each graph drawing module has two drawing functions, one that uses a set of default settings and one that can be supplied with user-defined settings. These functions produce a diagram of the type defined by the Haskell `Diagrams` library. The function with default settings has the type signature of:
 ```Haskell
 (Show a) => Graph a -> Diagram B
@@ -12,6 +14,14 @@ The `Visualise` module has an impure function named `saveSVG` which can be used 
 (Show a) => FilePath -> Dimensions -> Diagram B -> IO ()
 ```
 This means that it requires an output file path, a set of dimensions (a tuple of `Maybe Double` values for width and height, but only one is required for a diagram to successfully be scaled) and a `Diagram`. The function will provide an IO action to create the file, which will be in the SVG format. To change the type of file format the code changes would be straightforward.
+
+A graph is defined like so:
+```Haskell
+data Graph a = Empty
+			 | Vertex a
+			 | Overlay (Graph a) (Graph a)
+			 | Connect (Graph a) (Graph a)
+```
 
 ## Circular Flat Graphs
 The `Visualise.FlatCircle` module can be used to draw a flat graph with each node being at a vertex of a regular polygon with n sides, where n is the number of nodes the graph has. This works best for small graphs.
@@ -38,9 +48,9 @@ It works by grouping together connected nodes, going up in group size.
 * Arrows crossing each other
 
 ## Directed Acyclic Graphs
-Partial order directed graphs with no cycles can be drawn as trees using the `Visualise.DAG` module, using the Coffman-Graham algorithm to produce the layout. The indirect dependancies are removed/reduced in order to simplify the graph (so therefore the graph has to be a partial order graph) before topological ordering using Kahn's algorithm is carried out, then the nodes are drawn in layers and connected.
+Directed graphs with no cycles can be drawn as trees using the `Visualise.DAG` module, using the Coffman-Graham algorithm to produce the layout. The indirect dependancies are removed/reduced in order to simplify the graph (so therefore the graph has to be a partial order graph) before topological ordering using Kahn's algorithm is carried out, then the nodes are drawn in layers and connected.
 
-The functions `drawDAG` and `drawDAG'` can be used to draw the graph, with the adjustable settings again being the same as `Visualise.FlatCircle` and `Visualise.FlatAdaptive`.
+The functions `drawDAG` and `drawDAG'` can be used to draw the graph, with the adjustable settings again being the same as `Visualise.FlatCircle` and `Visualise.FlatAdaptive`. However unlike the other drawing drawing modules, this module has two extra drawing functions `drawDAGPartialOrder` and `drawDAGPartialOrder'` which remove indirect connections for partial order graphs before the graph is drawn, resulting in a cleaner graph drawing.
 
 ### Issues
 * Sometimes arrows can cross nodes
@@ -78,13 +88,12 @@ A set of graphs will be drawn by each of the algorithms, as required, the graphs
 * Firstly the partial order graph `(1 * ((2 * ((4 * 7) + (5 * 7))) + (3 * (6 * (5 * 7)))))`
 
 ### With `Visualise.DAG`
-<img src="examples/DAG_example_1.svg" width="50%" />
+#### With `drawDAG` and `drawDAGPartialOrder` respectively
+<img src="examples/DAG_example_1.svg" width="45%" />
+<img src="examples/DAG_partial_order_example_1.svg" width="45%" />
 
 ### With `Visualise.FlatCircle`
 <img src="examples/flat_circle_example_1.svg" />
 
 ### With `Visualise.FlatAdaptive`
 <img src="examples/flat_adaptive_example_1.svg" />
-
-# TODO
-* Accomodate with `Empty` graphs.
