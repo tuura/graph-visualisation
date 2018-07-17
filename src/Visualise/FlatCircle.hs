@@ -11,7 +11,7 @@ module Visualise.FlatCircle (
 
 import Algebra.Graph
 import Visualise
-import Diagrams.Prelude
+import Diagrams.Prelude hiding (Empty)
 import Diagrams.Backend.SVG
 import Diagrams.Path
 import Data.Char
@@ -25,16 +25,13 @@ data Settings = Settings { dynamicHead :: Measure Double
 layoutPoly :: (V t ~ V2, TrailLike t) => Int -> t
 layoutPoly n = regPoly n 1
 
-node :: String -> Diagram B
-node n = text n # fontSizeL 0.1 # href ("javascript:alert(\"Node " ++ n ++ "\")") <> circle 0.1 # named n
-
 drawFlatCircle :: (Show a) => Graph a -> Diagram B
 drawFlatCircle g = drawFlatCircle' (defaultSettings g) g
 
 drawFlatCircle' :: (Show a) => Settings -> Graph a -> Diagram B
 drawFlatCircle' s g = mconcat connected # frame 0.1
     where connected = map (\(a,b) -> connectOutside' arrowOpts a b diag) connections
-          diag = atPoints vertices (node <$> names)
+          diag = atPoints vertices (node 0.1 0.1 <$> names)
           vertices = trailVertices layout
           layout   = layoutPoly $ length names
           names = nub namesWDup

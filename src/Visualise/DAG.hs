@@ -12,7 +12,7 @@ module Visualise.DAG (
 
 import Visualise
 import Algebra.Graph
-import Diagrams.Prelude
+import Diagrams.Prelude hiding (Empty)
 import Diagrams.Backend.SVG
 import Diagrams.Path
 import Data.List
@@ -76,9 +76,6 @@ getLevels l cTo = foldLevel : getLevels (l \\ foldLevel) cTo
 reducedConnections :: (Show a, Eq a) => ConnectList a -> [(a,a)]
 reducedConnections = foldr (\(x,ys) acc -> zip ys (repeat x) ++ acc) []
 
-node :: String -> Diagram B
-node n = (text n # fontSizeL 0.1 # href ("javascript:alert(\"Node " ++ n ++ "\")") <> circle 0.1) # named n
-
 layerDiff :: (Show a, Eq a) => a -> a -> [[a]] -> Int
 layerDiff a b l = fst (foldGraphLayers a l) - fst (foldGraphLayers b l)
 
@@ -98,7 +95,7 @@ isOnLeftOfLayer x y
     | otherwise = False
 
 visualiseLayers :: [[String]] -> Diagram SVG
-visualiseLayers levelled = vsep 0.2 $ foldl (\acc level -> center (hsep 0.3 $ node <$> level) : acc) [] levelled
+visualiseLayers levelled = vsep 0.2 $ foldl (\acc level -> center (hsep 0.3 $ node 0.1 0.1 <$> level) : acc) [] levelled
 
 connectNodes :: ArrowOpts Double -> String -> String -> [[String]] -> Maybe Bool -> Diagram B
 connectNodes arrowOptsF n1 n2 levelled isLeft = connectPerim' arrowOptsF n1 n2 degreeOne degreeTwo $ visualiseLayers levelled

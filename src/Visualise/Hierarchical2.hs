@@ -10,7 +10,7 @@ module Visualise.Hierarchical (
 
 import Algebra.Graph hiding ((===))
 import Visualise
-import Diagrams.Prelude
+import Diagrams.Prelude hiding (Empty)
 import Diagrams.Backend.SVG
 
 data Settings = Settings { colF :: Int -> Colour Double

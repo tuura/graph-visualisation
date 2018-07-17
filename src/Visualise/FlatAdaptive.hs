@@ -11,7 +11,7 @@ module Visualise.FlatAdaptive (
 
 import Visualise
 import Algebra.Graph
-import Diagrams.Prelude
+import Diagrams.Prelude hiding (Empty)
 import Diagrams.Backend.SVG.CmdLine
 import Diagrams.Path
 import Data.Char
@@ -31,9 +31,6 @@ layoutPoly n = regPoly n 0.5
 
 layoutVertices :: Int -> [Point V2 Double]
 layoutVertices n = trailVertices $ regPoly n 1
-
-node :: String -> Diagram B
-node n = (text n # fontSizeL 0.1 # href ("javascript:alert(\"Node " ++ n ++ "\")") <> circle 0.1) # named n
 
 connected :: (Show a, Eq a, Ord a) => [a] -> [(a,a)] -> ConnectList a
 connected n l = groupConnected $ sortBy (\(x,_) (y,_) -> x `compare` y) (connectedTo l ++ connectedFrom l)
@@ -73,14 +70,14 @@ drawArrow s a b d
           arrowOpts2 = with & headLength .~ dynamicHead s & shaftStyle %~ lw (dynamicThick s) & arrowShaft .~ arc xDir (4/6 @@ turn)
 
 initialPositions :: Int -> [String] -> Diagram B
-initialPositions 1 n = cat' (r2 (-1,1)) (with & catMethod .~ Distrib & sep .~ 0.5) $ node <$> n
-initialPositions 2 n = hsep 0.3 $ node <$> n
+initialPositions 1 n = cat' (r2 (-1,1)) (with & catMethod .~ Distrib & sep .~ 0.5) $ node 0.1 0.1 <$> n
+initialPositions 2 n = hsep 0.3 $ node 0.1 0.1 <$> n
 
 connectedOnlyDiagram :: (Show a, IsName a) => [a] -> [(a,a)] -> Diagram B -> Diagram B
 connectedOnlyDiagram names connections initialDiagram = layoutGroups initialDiagram names $ getGroups (connected names connections)
 
 overlayedOnlyDiagram :: [String] -> [String] -> Diagram B
-overlayedOnlyDiagram names connectedOnlyList = hsep 0.2 $ node <$> (names \\ connectedOnlyList)
+overlayedOnlyDiagram names connectedOnlyList = hsep 0.2 $ node 0.1 0.1 <$> (names \\ connectedOnlyList)
 
 listConnectedOnly :: (Show a, Eq a) => [(a,a)] -> [a]
 listConnectedOnly connections = nub $ foldr (\(a,bs) acc -> a : bs ++ acc) [] (connectedTo connections ++ connectedFrom connections)
