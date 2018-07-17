@@ -89,8 +89,13 @@ A set of graphs will be drawn by each of the algorithms, as required, the graphs
 
 ### With `Visualise.DAG`
 #### With `drawDAG` and `drawDAGPartialOrder` respectively
-<img src="examples/DAG_example_1.svg" width="45%" />
-<img src="examples/DAG_partial_order_example_1.svg" width="45%" />
+
+<table>
+	<tr>
+		<td><img src="examples/DAG_example_1.svg" /></td>
+		<td><img src="examples/DAG_partial_order_example_1.svg" /></td>
+	</tr>
+</table>
 
 ### With `Visualise.FlatCircle`
 <img src="examples/flat_circle_example_1.svg" />
