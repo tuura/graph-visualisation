@@ -58,7 +58,7 @@ connectedTo l@((x,y):zs) = (x,outgoing) : if not (null remaining) then connected
           filtered = filter (\(a,b) -> a == x) l
 
 node :: Double -> Double -> String -> Diagram B
-node fS cS n = (text nodeText # fontSizeL fS # href ("javascript:alert(\"Node " ++ n ++ "\")") <> circle cS) # named n
+node fS cS n = (text nodeText # fontSizeL fS <> circle cS) # named n # href ("javascript:alert(\"Node " ++ n ++ "\")")
     where nodeText = if "_empty_node_" `isPrefixOf` n then "" else n
 
 dynamicStyle :: Measure Double -> Measure Double -> Measure Double

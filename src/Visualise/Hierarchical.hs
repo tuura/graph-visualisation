@@ -28,7 +28,7 @@ name (Overlay a b) = name a ++ "_overlay_" ++ name b
 name (Connect a b) = name a ++ "_connect_" ++ name b
 
 visualiseHier :: (Show a) => Graph a -> Int -> Settings -> Diagram B
-visualiseHier g@(Vertex a) l s = node 0.4 0.7 $ name g
+visualiseHier g@(Vertex a) l s = (node 0.4 0.7 $ name g) # lwL 0.05
 visualiseHier g@(Overlay g1 g2) l s = (drawn <> boundingRect drawn # fc (colF s l) # lw none # opacity (bgOp s)) # named (name g)
     where drawn = (visualiseHier g1 (l + 1) s === strutY 1 === visualiseHier g2 (l + 1) s) # frame 0.2
 visualiseHier g@(Connect g1 g2) l s = (arrowed <> boundingRect arrowed # fc (colF s l) # lw none # opacity (bgOp s)) # named (name g)
