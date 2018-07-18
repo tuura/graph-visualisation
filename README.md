@@ -7,7 +7,7 @@ Each graph drawing module has two drawing functions, one that uses a set of defa
 (Show a) => Graph a -> Diagram B
 ```
 
-Meaning that it requires a graph of the type defined by `Algebra.Graph` and from this produces a `Diagram` from the `Diagrams` library. The corrisponding function which requires an extra settings parameter adds a `Settings` parameter to the start of the type signature. The output of these functions is suitable to be given to the following `saveSVG` function.
+Meaning that it requires a graph of the type defined by `Algebra.Graph` and from this produces a `Diagram` from the `Diagrams` library. The corrisponding function which requires an extra settings parameter adds a required function of the type `Graph a -> Settings` to the start of the type signature. The output of these functions is suitable to be given to the following `saveSVG` function.
 
 The `Visualise` module has an impure function named `saveSVG` which can be used to output a `Diagram` to an SVG file. This function has the type signature of: 
 ```Haskell
@@ -18,9 +18,9 @@ This means that it requires an output file path, a set of dimensions (a tuple of
 A graph is defined like so:
 ```Haskell
 data Graph a = Empty
-			 | Vertex a
-			 | Overlay (Graph a) (Graph a)
-			 | Connect (Graph a) (Graph a)
+             | Vertex a
+             | Overlay (Graph a) (Graph a)
+             | Connect (Graph a) (Graph a)
 ```
 
 ## Circular Flat Graphs
@@ -30,12 +30,24 @@ The standard drawing function is `drawFlatCircle`, to provide additional setting
 
 The `Settings` type allows the arrows connecting nodes to be customised, with the type being defined as:
 ```Haskell
-Settings { dynamicHead :: Measure Double , dynamicThick :: Measure Double }
+data Settings = Settings { dynamicHead :: Measure Double 
+                         , dynamicThick :: Measure Double 
+                         }
 ``` 
-This enables the arrow shafts and head sizes to be customised. When the standard draw function is called the default settings are used which dynamically change the size of the arrow heads and thickness of the arrow shafts in accordance with the number of nodes.
+This enables the arrow shafts and head sizes to be customised. When the standard draw function is called the default settings are used which dynamically change the size of the arrow heads and thickness of the arrow shafts in accordance with the number of nodes, the `defaultSettings` function is defined like so:
+```Haskell
+defaultSettings :: Graph a -> Settings
+defaultSettings g = Settings (dynamicStyle normal $ countVertices g) (dynamicStyle thin $ countVertices g)
+```
+
+Where `dyanamicStyle` is a function in the main `Visualise` module which produces a `Measure Double` from a default size and the size of the graph:
+```Haskell
+dynamicStyle :: Measure Double -> Int -> Measure Double
+dynamicStyle def graphSize = def * 10/fromIntegral graphSize
+```
 
 ### Issues
-* Currently does not work for nodes with self-connected loops
+* Currently does not work for nodes with self-loops
 
 ## Adaptive Layout Flat Graphs
 The `Visualise.FlatAdaptive` module tries to represent any flat graph in a readable way however needs more work to be fully functioning.
@@ -50,7 +62,16 @@ It works by grouping together connected nodes, going up in group size.
 ## Directed Acyclic Graphs
 Directed graphs with no cycles can be drawn as trees using the `Visualise.DAG` module, using the Coffman-Graham algorithm to produce the layout. The indirect dependancies are removed/reduced in order to simplify the graph (so therefore the graph has to be a partial order graph) before topological ordering using Kahn's algorithm is carried out, then the nodes are drawn in layers and connected.
 
-The functions `drawDAG` and `drawDAG'` can be used to draw the graph, with the adjustable settings again being the same as `Visualise.FlatCircle` and `Visualise.FlatAdaptive`. However unlike the other drawing drawing modules, this module has two extra drawing functions `drawDAGPartialOrder` and `drawDAGPartialOrder'` which remove indirect connections for partial order graphs before the graph is drawn, resulting in a cleaner graph drawing.
+The functions `drawDAG` and `drawDAG'` can be used to draw the graph, with the adjustable settings again being the same as `Visualise.FlatCircle` and `Visualise.FlatAdaptive` but with two added parameters: the horizontal and vertical separation between nodes. This results in the `Settings` type being defined like so:
+```Haskell
+data Settings = Settings { layerSpacing :: Double
+                         , nodeSpacing :: Double
+                         , dynamicHead :: Measure Double
+                         , dynamicThick :: Measure Double
+                         }
+```
+
+However unlike the other drawing drawing modules, this module has two extra drawing functions `drawDAGPartialOrder` and `drawDAGPartialOrder'` which remove indirect connections for partial order graphs before the graph is drawn, resulting in a cleaner graph drawing.
 
 ### Issues
 * Sometimes arrows can cross nodes
@@ -68,11 +89,11 @@ The arrow settings defaults are the same as the other drawing modules, the defau
 
 The type signature for `Settings` is given by:
 ```Haskell
-Settings { colF :: Int -> Colour Double
-		 , bgOp :: Double
-		 , dynamicHead :: Measure Double
-		 , dynamicThick :: Measure Double
-		 }
+data Settings = Settings { colF :: Int -> Colour Double
+                		 , bgOp :: Double
+                		 , dynamicHead :: Measure Double
+                		 , dynamicThick :: Measure Double
+                		 }
 ```
 
 ### Issues
@@ -87,20 +108,21 @@ GraphGen is a small Java program which generates a random graph to be used for t
 A set of graphs will be drawn by each of the algorithms, as required, the graphs are of the type defined in `Algebra.Graph`:
 * Firstly the partial order graph `(1 * ((2 * ((4 * 7) + (5 * 7))) + (3 * (6 * (5 * 7)))))`
 
-### With `Visualise.DAG`
-#### With `drawDAG` and `drawDAGPartialOrder` respectively
-
-<table>
-	<tbody style="border:0px">
-		<tr style="border:0px">
-			<td style="border:0px"><img src="examples/DAG_example_1.svg" /></td>
-			<td style="border:0px"><img src="examples/DAG_partial_order_example_1.svg" /></td>
-		</tr>
-	</tbody>
-</table>
+### With `Visualise.FlatAdaptive`
+<img src="examples/flat_adaptive_example_1.svg" />
 
 ### With `Visualise.FlatCircle`
 <img src="examples/flat_circle_example_1.svg" />
 
-### With `Visualise.FlatAdaptive`
-<img src="examples/flat_adaptive_example_1.svg" />
+### With `Visualise.DAG`
+#### With `drawDAG` and `drawDAGPartialOrder` respectively
+
+<table>
+	<tr>
+		<td><img src="examples/DAG_example_1.svg" /></td>
+		<td><img src="examples/DAG_partial_order_example_1.svg" /></td>
+	</tr>
+</table>
+
+### With `Visualise.Hierarchical`
+<img src="examples/hierarchical_example_1.svg" />

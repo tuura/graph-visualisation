@@ -83,10 +83,10 @@ listConnectedOnly :: (Show a, Eq a) => [(a,a)] -> [a]
 listConnectedOnly connections = nub $ foldr (\(a,bs) acc -> a : bs ++ acc) [] (connectedTo connections ++ connectedFrom connections)
 
 drawFlatAdaptive :: (Show a) => Graph a -> Diagram B
-drawFlatAdaptive g = drawFlatAdaptive' (defaultSettings g) g
+drawFlatAdaptive = drawFlatAdaptive' defaultSettings
 
-drawFlatAdaptive' :: (Show a) => Settings -> Graph a -> Diagram B
-drawFlatAdaptive' s graph = (foldr (\(a,b) acc -> drawArrow s a b acc) outDiag connections) # frame 0.1
+drawFlatAdaptive' :: (Show a) => (Graph a -> Settings) -> Graph a -> Diagram B
+drawFlatAdaptive' settingsF graph = (foldr (\(a,b) acc -> drawArrow s a b acc) outDiag connections) # frame 0.1
     where outDiag = overlayedDiagram ||| strutX 0.1 ||| connectedDiagram
           overlayedDiagram = overlayedOnlyDiagram names connectedNames
           connectedDiagram = connectedOnlyDiagram connectedNames connections . initialPositions (initPos s) $ connectedNames
@@ -95,6 +95,7 @@ drawFlatAdaptive' s graph = (foldr (\(a,b) acc -> drawArrow s a b acc) outDiag c
           connections = nub connectionsWDup
           (ProcessedGraph namesWDup connectionsWDup) = getVertices g
           g = show <$> graph
+          s = settingsF graph
 
 -- drawFlatAdaptive :: (Show a) => FilePath -> Dimensions -> Graph a -> Diagram B
 -- drawFlatAdaptive path dims g = drawFlatAdaptive' (defaultSettings g) path dims g

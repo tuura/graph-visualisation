@@ -5,7 +5,7 @@
 module Visualise.Hierarchical (
     Settings(..),
 
-    drawHierarchical, drawHierarchical'
+    drawHier, drawHier'
 ) where
 
 import Algebra.Graph hiding ((===))
@@ -37,10 +37,10 @@ visualiseHier g@(Connect g1 g2) l s = (arrowed <> boundingRect arrowed # fc (col
           arrowOpts = with & headLength .~ dynamicHead s & shaftStyle %~ lw (dynamicThick s)
 
 drawHier :: (Show a) => Graph a -> Diagram B
-drawHier g = drawHier' (defaultSettings g) g
+drawHier = drawHier' defaultSettings
 
-drawHier' :: (Show a) => Settings -> Graph a -> Diagram B
-drawHier' s g = visualiseHier g 0 s # frame 0.1
+drawHier' :: (Show a) => (Graph a -> Settings) -> Graph a -> Diagram B
+drawHier' settingsF g = visualiseHier g 0 (settingsF g) # frame 0.1
 
 defaultSettings :: Graph a -> Settings
 defaultSettings g = Settings alternatingColour 1 (dynamicStyle normal entireSize) (dynamicStyle thin entireSize)

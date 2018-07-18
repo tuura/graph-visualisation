@@ -7,7 +7,7 @@ module Visualise (
 ) where
 
 import Algebra.Graph
-import Diagrams.Prelude hiding (Empty)
+import Diagrams.Prelude hiding (Empty, union)
 import Diagrams.Backend.SVG
 import Data.List
 
@@ -20,7 +20,7 @@ type ConnectList a = [(a,[a])]
 saveSVG :: FilePath -> Dimensions -> Diagram B -> IO ()
 saveSVG path (w,h) d = renderSVG path (mkSizeSpec2D w h) d
 
-countVertices :: Graph a -> Measure Double
+countVertices :: Graph a -> Int
 countVertices Empty = 1
 countVertices (Vertex a) = 1
 countVertices (Overlay a b) = countVertices a + countVertices b
@@ -32,10 +32,10 @@ getVertices g = namesAndConnections g ""
 namesAndConnections :: Graph String -> String -> ProcessedGraph String
 namesAndConnections Empty c = ProcessedGraph ["_empty_node_" ++ c] []
 namesAndConnections (Vertex a) c = ProcessedGraph [a] []
-namesAndConnections (Overlay a b) c = ProcessedGraph (nA ++ nB) (cA ++ cB)
+namesAndConnections (Overlay a b) c = ProcessedGraph (nA `union` nB) (cA `union` cB)
     where (ProcessedGraph nA cA) = namesAndConnections a (c ++ "_l")
           (ProcessedGraph nB cB) = namesAndConnections b (c ++ "_r")
-namesAndConnections (Connect a b) c = ProcessedGraph (nA ++ nB) ([(aA, bB) | aA <- nA, bB <- nB] ++ cA ++ cB)
+namesAndConnections (Connect a b) c = ProcessedGraph (nA `union` nB) ([(aA, bB) | aA <- nA, bB <- nB] `union` cA `union` cB)
     where (ProcessedGraph nA cA) = namesAndConnections a (c ++ "_l")
           (ProcessedGraph nB cB) = namesAndConnections b (c ++ "_r")
 
@@ -61,6 +61,6 @@ node :: Double -> Double -> String -> Diagram B
 node fS cS n = (text nodeText # fontSizeL fS <> circle cS) # named n # href ("javascript:alert(\"Node " ++ n ++ "\")")
     where nodeText = if "_empty_node_" `isPrefixOf` n then "" else n
 
-dynamicStyle :: Measure Double -> Measure Double -> Measure Double
-dynamicStyle def graphSize = def * 10/graphSize
+dynamicStyle :: Measure Double -> Int -> Measure Double
+dynamicStyle def graphSize = def * 10/fromIntegral graphSize
 
