@@ -19,7 +19,7 @@ import Data.List
 import Data.Function
 
 
-newtype Graphs a = Graphs [ProcessedGraph a] deriving (Show)
+newtype Graphs a b = Graphs [ProcessedGraph a b] deriving (Show)
 
 data Settings = Settings { dynamicHead :: Measure Double
                          , dynamicThick :: Measure Double

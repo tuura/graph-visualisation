@@ -3,7 +3,7 @@ module Visualise (
 
     Dimensions, ConnectList,
 
-    saveSVG, countVertices, getVertices, connectedFrom, connectedTo, node, dynamicStyle
+    saveSVG, countVertices, getVerticesString, getVerticesChar, getVerticesInt, getVerticesGraph, connectedFrom, connectedTo, node, dynamicStyle
 ) where
 
 import Algebra.Graph
@@ -26,18 +26,37 @@ countVertices (Vertex a) = 1
 countVertices (Overlay a b) = countVertices a + countVertices b
 countVertices (Connect a b) = countVertices a + countVertices b
 
-getVertices :: Graph String -> ProcessedGraph String
-getVertices g = namesAndConnections g ""
+getVerticesString :: Graph String -> ProcessedGraph String
+getVerticesString g = namesAndConnections id g ""
 
-namesAndConnections :: Graph String -> String -> ProcessedGraph String
-namesAndConnections Empty c = ProcessedGraph ["_empty_node_" ++ c] []
-namesAndConnections (Vertex a) c = ProcessedGraph [a] []
-namesAndConnections (Overlay a b) c = ProcessedGraph (nA `union` nB) (cA `union` cB)
-    where (ProcessedGraph nA cA) = namesAndConnections a (c ++ "_l")
-          (ProcessedGraph nB cB) = namesAndConnections b (c ++ "_r")
-namesAndConnections (Connect a b) c = ProcessedGraph (nA `union` nB) ([(aA, bB) | aA <- nA, bB <- nB] `union` cA `union` cB)
-    where (ProcessedGraph nA cA) = namesAndConnections a (c ++ "_l")
-          (ProcessedGraph nB cB) = namesAndConnections b (c ++ "_r")
+getVerticesChar :: Graph Char -> ProcessedGraph String
+getVerticesChar g = namesAndConnections (id . flip (:) []) g ""
+
+getVerticesInt :: Graph Int -> ProcessedGraph String
+getVerticesInt g = namesAndConnections show g ""
+
+getVerticesGraph :: Graph (Graph Int) -> ProcessedGraph String -- TODO: Not just Int
+getVerticesGraph g = namesAndConnections (\a -> let ProcessedGraph names connections = getVerticesInt a in mconcat names) g ""
+
+namesAndConnections :: (a -> String) -> Graph a -> String -> ProcessedGraph String
+namesAndConnections displayF Empty c = ProcessedGraph ["_empty_node_" ++ c] []
+namesAndConnections displayF (Vertex a) c = ProcessedGraph [displayF a] []
+    -- | isGraph a = namesAndConnections a c
+    -- | otherwise = ProcessedGraph [show a] []
+-- namesAndConnections (Vertex a) c = ProcessedGraph [a] []
+namesAndConnections displayF (Overlay a b) c = ProcessedGraph (nA `union` nB) (cA `union` cB)
+    where (ProcessedGraph nA cA) = namesAndConnections displayF a (c ++ "_l")
+          (ProcessedGraph nB cB) = namesAndConnections displayF b (c ++ "_r")
+namesAndConnections displayF (Connect a b) c = ProcessedGraph (nA `union` nB) ([(aA, bB) | aA <- nA, bB <- nB] `union` cA `union` cB)
+    where (ProcessedGraph nA cA) = namesAndConnections displayF a (c ++ "_l")
+          (ProcessedGraph nB cB) = namesAndConnections displayF b (c ++ "_r")
+
+-- isGraph :: a -> Bool
+-- isGraph Empty         = True
+-- isGraph (Vertex _)    = True
+-- isGraph (Overlay _ _) = True
+-- isGraph (Connect _ _) = True
+-- isGraph _             = False
 
 connectedFrom :: (Show a, Eq a) => [(a,a)] -> ConnectList a
 connectedFrom [(a,b),(x,y)]
