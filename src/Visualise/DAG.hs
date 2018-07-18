@@ -7,7 +7,7 @@
 module Visualise.DAG (
     Settings,
 
-    drawDAG, drawDAG'--, drawDAGPartialOrder, drawDAGPartialOrder'
+    drawDAG, drawDAG', drawDAGPartialOrder, drawDAGPartialOrder'
 ) where
 
 import Visualise
@@ -18,9 +18,11 @@ import Diagrams.Path
 import Data.List
 import Data.Maybe
 
-data Settings = Settings { dynamicHead :: Measure Double
+data Settings = Settings { layerSpacing :: Double
+                         , nodeSpacing :: Double
+                         , dynamicHead :: Measure Double
                          , dynamicThick :: Measure Double
-                     }
+                         }
 
 data LayerPosition = LayerLeft | LayerMiddle | LayerRight deriving (Eq)
 
@@ -43,7 +45,7 @@ getLevelList q firstCTo = let (queue,list,cTo) = foldThroughRoots q firstCTo
           
 foldThroughRoots :: (Show a, Eq a) => [a] -> ConnectList a -> ([a], [a], ConnectList a)
 foldThroughRoots queue firstCTo = foldr (\root (accQueue,accList,accCTo) -> 
-                                    let newList = (accList ++ [root]) -- Prepend the current root node to the list
+                                    let newList = (root : accList) -- Prepend the current root node to the list
                                         folded = foldThroughConnectedNodes root accQueue accCTo -- Fold over the nodes connected to the root node
                                     in (fst folded, newList, snd folded)) -- Add the nodes which have no other connections currently to the list
                                     ([],[],firstCTo) queue -- Start by folding over the root nodes with no incoming connections
@@ -108,13 +110,16 @@ positionInGivenLayer x ys
               getElemIndex (Just i) = i
               getElemIndex Nothing = 0
 
-visualiseLayers :: [[String]] -> Diagram SVG
-visualiseLayers levelled = vsep 0.2 $ foldl (\acc level -> center (hsep 0.3 $ node 0.1 0.1 <$> level) : acc) [] levelled
+visualiseLayers :: Settings -> [[String]] -> Diagram SVG
+visualiseLayers s levelled = vsep (layerSpacing s) $ foldl (\acc level -> center (hsep (nodeSpacing s) $ node 0.1 0.1 <$> level) : acc) [] levelled
 
-connectNodes :: ArrowOpts Double -> String -> String -> [[String]] -> Maybe LayerPosition -> Diagram B
-connectNodes arrowOptsF n1 n2 levelled pos = connectPerim' arrowOptsF n1 n2 degreeOne degreeTwo $ visualiseLayers levelled
-    where degreeOne = getArrowPoints pos (1/2 @@ turn) (0 @@ turn) (-1/4 @@ turn)
-          degreeTwo = getArrowPoints pos (1/2 @@ turn) (0 @@ turn) (1/4 @@ turn)
+-- connectNodes :: ArrowOpts Double -> String -> String -> [[String]] -> Maybe LayerPosition -> Diagram B
+-- connectNodes arrowOptsF n1 n2 levelled pos = connectPerim' arrowOptsF n1 n2 degreeOne degreeTwo $ visualiseLayers levelled
+--     where degreeOne = getArrowPoints pos (1/2 @@ turn) (0 @@ turn) (-1/4 @@ turn)
+          -- degreeTwo = getArrowPoints pos (1/2 @@ turn) (0 @@ turn) (1/4 @@ turn)
+
+connectNodes :: Settings -> ArrowOpts Double -> String -> String -> [[String]] -> Maybe LayerPosition -> Diagram B
+connectNodes s arrowOptsF n1 n2 levelled pos = connectOutside' arrowOptsF n1 n2 $ visualiseLayers s levelled
 
 getArrowPoints :: Maybe LayerPosition -> a -> a -> a -> a
 getArrowPoints posM a b c = if isJust posM 
@@ -126,9 +131,10 @@ getArrowPoints posM a b c = if isJust posM
 
 visualiseDAG :: Settings -> [String] -> [(String,String)] -> ConnectList String -> Diagram B
 visualiseDAG s names rawConnections connectedList = mconcat connectedDiagram # frame 0.1
-    where connectedDiagram = map (\(a,b) -> (if abs (layerDiff a b levelled) > 1 
-                                             then connectNodes (arrowOpts1 & (arrowOpts2 a b)) a b levelled $ Just (elemPosition a levelled) 
-                                             else connectNodes arrowOpts1 a b levelled Nothing)) rawConnections
+    -- where connectedDiagram = map (\(a,b) -> (if abs (layerDiff a b levelled) > 1 
+    --                                          then connectNodes (arrowOpts1 & (arrowOpts2 a b)) a b levelled $ Just (elemPosition a levelled) 
+    --                                          else connectNodes arrowOpts1 a b levelled Nothing)) rawConnections
+    where connectedDiagram = map (\(a,b) -> connectNodes s arrowOpts1 a b levelled Nothing) rawConnections
           arrowOpts1 = with & headLength .~ dynamicHead s & shaftStyle %~ lw (dynamicThick s)
           arrowOpts2 a b = let posA = elemPosition a levelled 
                                posB = elemPosition b levelled
@@ -139,28 +145,29 @@ visualiseDAG s names rawConnections connectedList = mconcat connectedDiagram # f
           topList = reverse . nub . reverse $ getLevelList (getRoots names connectedList) connectedList
 
 drawDAGPartialOrder :: (Show a) => Graph a -> Diagram B
-drawDAGPartialOrder g = drawDAGPartialOrder' (defaultSettings g) g
+drawDAGPartialOrder = drawDAGPartialOrder' defaultSettings
 
-drawDAGPartialOrder' :: (Show a) => Settings -> Graph a -> Diagram B
-drawDAGPartialOrder' s graph = visualiseDAG s names newConnections reduced
+drawDAGPartialOrder' :: (Show a) => (Graph a -> Settings) -> Graph a -> Diagram B
+drawDAGPartialOrder' settingsF graph = visualiseDAG s names newConnections reduced
     where newConnections = reducedConnections reduced
           reduced = reduction (connectedFrom connections) []
           names = nub namesWDuplicates
           connections = nub connectionsWDuplicates
           (ProcessedGraph namesWDuplicates connectionsWDuplicates) = getVertices g
           g = show <$> graph
+          s = settingsF graph
 
 drawDAG :: (Show a) => Graph a -> Diagram B
-drawDAG g = drawDAG' (defaultSettings g) g
+drawDAG = drawDAG' defaultSettings
 
-drawDAG' :: (Show a) => Settings -> Graph a -> Diagram B
-drawDAG' s graph = visualiseDAG s names connections connectedList
+drawDAG' :: (Show a) => (Graph a -> Settings) -> Graph a -> Diagram B
+drawDAG' settingsF graph = visualiseDAG s names connections connectedList
     where connectedList = connectedFrom connections
           names = nub namesWDuplicates
           connections = nub . reverse $ connectionsWDuplicates
           (ProcessedGraph namesWDuplicates connectionsWDuplicates) = getVertices g
           g = show <$> graph
+          s = settingsF graph
 
 defaultSettings :: Graph a -> Settings
-defaultSettings g = Settings (dynamicStyle normal $ countVertices g) 
-                           (dynamicStyle thin $ countVertices g)
+defaultSettings g = Settings 0.1 0.3 (dynamicStyle normal $ countVertices g) (dynamicStyle thin $ countVertices g)
