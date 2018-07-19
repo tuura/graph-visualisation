@@ -1,9 +1,14 @@
+-- {-# LANGUAGE TypeSynonymInstances #-}
+{-# LANGUAGE FlexibleInstances #-}
+
 module Visualise (
     ProcessedGraph(..),
 
     Dimensions, ConnectList,
 
-    saveSVG, countVertices, getVerticesString, getVerticesChar, getVerticesInt, getVerticesGraph, connectedFrom, connectedTo, node, dynamicStyle
+    VertexContents,
+
+    saveSVG, countVertices, getVertices, connectedFrom, connectedTo, node, dynamicStyle
 ) where
 
 import Algebra.Graph
@@ -17,6 +22,29 @@ type Dimensions = (Maybe Double, Maybe Double)
 
 type ConnectList a = [(a,[a])]
 
+class VertexContents a where
+    getName :: a -> [String]
+    getConnections :: a -> [(String,String)]
+
+instance VertexContents String where
+    getName x = [x]
+    getConnections _ = []
+
+instance VertexContents Char where
+    getName x = (x : []) : []
+    getConnections _ = []
+
+instance VertexContents Int where
+    getName x = [show x]
+    getConnections _ = []
+
+instance (VertexContents a) => VertexContents (Graph a) where
+    getName g = names
+        where (ProcessedGraph names _) = getVertices g
+
+    getConnections g = connections
+        where (ProcessedGraph names connections) = getVertices g
+
 saveSVG :: FilePath -> Dimensions -> Diagram B -> IO ()
 saveSVG path (w,h) d = renderSVG path (mkSizeSpec2D w h) d
 
@@ -26,37 +54,20 @@ countVertices (Vertex a) = 1
 countVertices (Overlay a b) = countVertices a + countVertices b
 countVertices (Connect a b) = countVertices a + countVertices b
 
-getVerticesString :: Graph String -> ProcessedGraph String
-getVerticesString g = namesAndConnections id g ""
 
-getVerticesChar :: Graph Char -> ProcessedGraph String
-getVerticesChar g = namesAndConnections (id . flip (:) []) g ""
+getVertices :: (VertexContents a) => Graph a -> ProcessedGraph String
+getVertices g = namesAndConnections g ""
 
-getVerticesInt :: Graph Int -> ProcessedGraph String
-getVerticesInt g = namesAndConnections show g ""
 
-getVerticesGraph :: Graph (Graph Int) -> ProcessedGraph String -- TODO: Not just Int
-getVerticesGraph g = namesAndConnections (\a -> let ProcessedGraph names connections = getVerticesInt a in mconcat names) g ""
-
-namesAndConnections :: (a -> String) -> Graph a -> String -> ProcessedGraph String
-namesAndConnections displayF Empty c = ProcessedGraph ["_empty_node_" ++ c] []
-namesAndConnections displayF (Vertex a) c = ProcessedGraph [displayF a] []
-    -- | isGraph a = namesAndConnections a c
-    -- | otherwise = ProcessedGraph [show a] []
--- namesAndConnections (Vertex a) c = ProcessedGraph [a] []
-namesAndConnections displayF (Overlay a b) c = ProcessedGraph (nA `union` nB) (cA `union` cB)
-    where (ProcessedGraph nA cA) = namesAndConnections displayF a (c ++ "_l")
-          (ProcessedGraph nB cB) = namesAndConnections displayF b (c ++ "_r")
-namesAndConnections displayF (Connect a b) c = ProcessedGraph (nA `union` nB) ([(aA, bB) | aA <- nA, bB <- nB] `union` cA `union` cB)
-    where (ProcessedGraph nA cA) = namesAndConnections displayF a (c ++ "_l")
-          (ProcessedGraph nB cB) = namesAndConnections displayF b (c ++ "_r")
-
--- isGraph :: a -> Bool
--- isGraph Empty         = True
--- isGraph (Vertex _)    = True
--- isGraph (Overlay _ _) = True
--- isGraph (Connect _ _) = True
--- isGraph _             = False
+namesAndConnections :: (VertexContents a) => Graph a -> String -> ProcessedGraph String
+namesAndConnections Empty c = ProcessedGraph ["_empty_node_" ++ c] []
+namesAndConnections (Vertex a) c = ProcessedGraph (getName a) (getConnections a)
+namesAndConnections (Overlay a b) c = ProcessedGraph (nA `union` nB) (cA `union` cB)
+    where (ProcessedGraph nA cA) = namesAndConnections a (c ++ "_l")
+          (ProcessedGraph nB cB) = namesAndConnections b (c ++ "_r")
+namesAndConnections (Connect a b) c = ProcessedGraph (nA `union` nB) ([(aA, bB) | aA <- nA, bB <- nB] `union` cA `union` cB)
+    where (ProcessedGraph nA cA) = namesAndConnections a (c ++ "_l")
+          (ProcessedGraph nB cB) = namesAndConnections b (c ++ "_r")
 
 connectedFrom :: (Show a, Eq a) => [(a,a)] -> ConnectList a
 connectedFrom [(a,b),(x,y)]

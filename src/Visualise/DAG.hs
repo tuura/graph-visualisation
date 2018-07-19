@@ -7,7 +7,7 @@
 module Visualise.DAG (
     Settings,
 
-    drawDAGInt, drawDAGInt', drawDAGPartialOrderInt, drawDAGPartialOrderInt'
+    drawDAG, drawDAG', drawDAGPartialOrder, drawDAGPartialOrder'
 ) where
 
 import Visualise
@@ -144,29 +144,27 @@ visualiseDAG s names rawConnections connectedList = mconcat connectedDiagram # f
           levelled = reverse . getLevels topList [] $ connectedList
           topList = reverse . nub . reverse $ getLevelList (getRoots names connectedList) connectedList
 
-drawDAGPartialOrderInt :: Graph Int -> Diagram B
-drawDAGPartialOrderInt = drawDAGPartialOrderInt' defaultSettings
+drawDAGPartialOrder :: (Show a, VertexContents a) => Graph a -> Diagram B
+drawDAGPartialOrder = drawDAGPartialOrder' defaultSettings
 
-drawDAGPartialOrderInt' :: (Graph Int -> Settings) -> Graph Int -> Diagram B
-drawDAGPartialOrderInt' settingsF g = visualiseDAG s names newConnections reduced
+drawDAGPartialOrder' :: (Show a, VertexContents a) => (Graph a -> Settings) -> Graph a -> Diagram B
+drawDAGPartialOrder' settingsF g = visualiseDAG s names newConnections reduced
     where newConnections = reducedConnections reduced
           reduced = reduction (connectedFrom connections) []
           names = nub namesWDuplicates
           connections = nub connectionsWDuplicates
-          (ProcessedGraph namesWDuplicates connectionsWDuplicates) = getVerticesInt g
-          -- g = show <$> graph
+          (ProcessedGraph namesWDuplicates connectionsWDuplicates) = getVertices g
           s = settingsF g
 
-drawDAGInt :: Graph Int -> Diagram B
-drawDAGInt = drawDAGInt' defaultSettings
+drawDAG :: (Show a, VertexContents a) => Graph a -> Diagram B
+drawDAG = drawDAG' defaultSettings
 
-drawDAGInt' :: (Graph Int -> Settings) -> Graph Int -> Diagram B
-drawDAGInt' settingsF g = visualiseDAG s names connections connectedList
+drawDAG' :: (Show a, VertexContents a) => (Graph a -> Settings) -> Graph a -> Diagram B
+drawDAG' settingsF g = visualiseDAG s names connections connectedList
     where connectedList = connectedFrom connections
           names = nub namesWDuplicates
           connections = nub . reverse $ connectionsWDuplicates
-          (ProcessedGraph namesWDuplicates connectionsWDuplicates) = getVerticesInt g
-          -- g = show <$> graph
+          (ProcessedGraph namesWDuplicates connectionsWDuplicates) = getVertices g
           s = settingsF g
 
 defaultSettings :: Graph a -> Settings
