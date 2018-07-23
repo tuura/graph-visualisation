@@ -34,6 +34,7 @@ connected :: (Show a, Eq a, Ord a) => [a] -> [(a,a)] -> ConnectList a
 connected n l = groupConnected $ sortBy (\(x,_) (y,_) -> x `compare` y) (connectedTo l ++ connectedFrom l)
 
 groupConnected :: (Eq a) => ConnectList a -> ConnectList a
+groupConnected [] = []
 groupConnected [(a,bs),(c,ds)]
     | a == c = [(a,bs++ds)]
     | otherwise = (a,bs):[(c,ds)]
@@ -80,12 +81,13 @@ overlayedOnlyDiagram nodes connectedOnlyList = hsep 0.2 $ draw <$> (nodes \\ con
 listConnectedOnly :: (Eq a) => [(a,a)] -> [a]
 listConnectedOnly connections = nub $ foldr (\(a,bs) acc -> a : bs ++ acc) [] (connectedTo connections ++ connectedFrom connections)
 
-drawFlatAdaptive :: (Show a, Eq a) => (a -> Diagram B) -> Graph a -> Diagram B
+drawFlatAdaptive :: (Show a, Eq a, Countable a) => (a -> Diagram B) -> Graph a -> Diagram B
 drawFlatAdaptive = drawFlatAdaptive' defaultSettings
 
 drawFlatAdaptive' :: (Show a, Eq a) => (Graph a -> Settings) -> (a -> Diagram B) -> Graph a -> Diagram B
-drawFlatAdaptive' settingsF drawF g = (foldr (\(a,b) acc -> drawArrow s (name a) (name b) acc) outDiag connections) # frame 0.1
-    where outDiag = overlayedDiagram ||| strutX 0.1 ||| connectedDiagram
+drawFlatAdaptive' settingsF drawF g = outDiag <> boundingRect outDiag
+    where outDiag = (foldr (\(a,b) acc -> drawArrow s (name a) (name b) acc) beforeArrowsDiag connections) # frame 0.1
+          beforeArrowsDiag = overlayedDiagram ||| strutX 0.1 ||| connectedDiagram
           overlayedDiagram = overlayedOnlyDiagram nodes connectedNodes
           connectedDiagram = connectedOnlyDiagram connectedNodes connections . initialPositions (initPos s) $ connectedNodes
           connectedNodes = listConnectedOnly connections
@@ -99,7 +101,7 @@ drawFlatAdaptive' settingsF drawF g = (foldr (\(a,b) acc -> drawArrow s (name a)
 -- drawFlatAdaptive' s path dims g = draw path dims $ visualiseFlatAdaptive s g # frame 0.1
 
 
-defaultSettings :: Graph a -> Settings
+defaultSettings :: (Countable a) => Graph a -> Settings
 defaultSettings g = Settings (dynamicStyle small $ count g) 
                              (dynamicStyle thin $ count g)
                              1

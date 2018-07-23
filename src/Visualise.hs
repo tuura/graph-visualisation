@@ -25,6 +25,8 @@ module Visualise (
     --drawNode,-- drawGraph,
     drawDefaultNode,
 
+    drawNodeWithEmptyFlag,
+
 
     count,
 
@@ -38,6 +40,7 @@ import Diagrams.Prelude hiding (Empty, union, size)
 import Diagrams.Backend.SVG
 import Data.List
 import Data.Either
+import Data.Maybe
 
 data Node = Node { name :: String
                  , diag :: Diagram B
@@ -86,9 +89,16 @@ instance Countable Int where
 instance Countable Char where
     count _ = 1
 
+instance Countable (String,Bool) where
+    count _ = 1
+
 drawDefaultNode :: String -> Diagram B
 drawDefaultNode n = (text n # fontSizeL 0.1 <> circle 0.1) # href ("javascript:alert(\"Node " ++ n ++ "\")")
 
+
+drawNodeWithEmptyFlag :: (String,Bool) -> Diagram B
+drawNodeWithEmptyFlag (n,f) = let txt = if f then "" else n 
+                              in (text txt # fontSizeL 0.1 <> circle 0.1) # href ("javascript:alert(\"Node " ++ n ++ "\")")
 
 getNode :: (Show a) => (a -> Diagram B) -> Either String a -> Node
 getNode drawF x
