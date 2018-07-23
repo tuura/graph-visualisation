@@ -10,6 +10,9 @@ module Visualise (
     ProcessedGraph(..),
 
     Node, Dimensions, ConnectList,
+
+    Draw,
+
     name, diag,
 
     -- Named,
@@ -17,7 +20,7 @@ module Visualise (
     -- VertexContents,
     -- Draw,
     draw, 
-    drawNode,-- drawGraph,
+    --drawNode,-- drawGraph,
     drawDefaultNode,
 
     getNode,
@@ -40,12 +43,21 @@ instance Eq Node where
 instance Show Node where
     show = name
 
+instance Ord Node where
+    (Node n1 _) `compare` (Node n2 _) = n1 `compare` n2
+
+class Draw a where
+    draw :: a -> Diagram B
+
+instance Draw Node where
+    draw (Node _ d) = d
+
 data ProcessedGraph = ProcessedGraph [Node] [(Node, Node)] deriving (Show)
 
 
 type Dimensions = (Maybe Double, Maybe Double)
 
-type ConnectList = [(Node,[Node])]
+type ConnectList a = [(a,[a])]
 
 -- class VertexContents a where
 --     getName :: a -> String
@@ -108,14 +120,14 @@ countVertices (Connect a b) = countVertices a + countVertices b
 -- drawNode nn = (text n # fontSizeL 0.1 <> circle 0.1) # named n # href ("javascript:alert(\"Node " ++ n ++ "\")")
 --     where n = show nn
 
-class Draw a where
-    drawNode :: (a -> Diagram B) -> a -> Diagram B
+-- class Draw a where
+--     drawNode :: (a -> Diagram B) -> a -> Diagram B
 
-instance Draw (Graph a) where
-    drawNode drawN g = drawN g
+-- instance Draw (Graph a) where
+--     drawNode drawN g = drawN g
 
-instance Draw String where
-    drawNode _ g = drawDefaultNode g
+-- instance Draw String where
+--     drawNode _ g = drawDefaultNode g
 
 drawDefaultNode :: String -> Diagram B
 drawDefaultNode n = (text n # fontSizeL 0.1 <> circle 0.1) # href ("javascript:alert(\"Node " ++ n ++ "\")")
@@ -131,8 +143,8 @@ drawDefaultNode n = (text n # fontSizeL 0.1 <> circle 0.1) # href ("javascript:a
 -- drawGraph :: ((a -> Diagram B) -> Graph a -> Diagram B) -> (a -> Diagram B) -> Graph a -> Diagram B
 -- drawGraph drawF nodeF g = drawF nodeF g
 
-draw :: (Eq a, Show a) => ((a -> Diagram B) -> Graph a -> Diagram B) -> (a -> Diagram B) -> Graph a -> Diagram B
-draw drawF drawN g = diag $ getNode (drawF drawN) g
+-- draw :: (Eq a, Show a) => ((a -> Diagram B) -> Graph a -> Diagram B) -> (a -> Diagram B) -> Graph a -> Diagram B
+-- draw drawF drawN g = diag $ getNode (drawF drawN) g
 
 
 
@@ -189,7 +201,7 @@ namesAndConnections drawF (Connect a b) = ProcessedGraph (nA `union` nB) ([(aA, 
 --     where (ProcessedGraph nA cA) = namesAndConnections a (c ++ "_l")
 --           (ProcessedGraph nB cB) = namesAndConnections b (c ++ "_r")
 
-connectedFrom :: [(Node,Node)] -> ConnectList
+connectedFrom :: (Eq a) => [(a,a)] -> ConnectList a
 connectedFrom [] = []
 connectedFrom [(a,b),(x,y)]
   | b == y = [(b,[a,x])]
@@ -199,7 +211,7 @@ connectedFrom l@((x,y):zs) = (y,incoming) : if not (null remaining) then connect
           incoming = foldr (\(a,b) acc -> a : acc) [] filtered
           filtered = filter (\(a,b) -> b == y) l
 
-connectedTo :: [(Node,Node)] -> ConnectList
+connectedTo :: (Eq a) => [(a,a)] -> ConnectList a
 connectedTo [] = []
 connectedTo [(a,b),(x,y)]
   | a == x = [(a,[b,y])]

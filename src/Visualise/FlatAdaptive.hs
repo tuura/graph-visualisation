@@ -19,8 +19,6 @@ import Data.List
 import Data.Function
 
 
-newtype Graphs a b = Graphs [ProcessedGraph a b] deriving (Show)
-
 data Settings = Settings { dynamicHead :: Measure Double
                          , dynamicThick :: Measure Double
                          , initPos :: Int
@@ -35,7 +33,7 @@ layoutVertices n = trailVertices $ regPoly n 1
 connected :: (Show a, Eq a, Ord a) => [a] -> [(a,a)] -> ConnectList a
 connected n l = groupConnected $ sortBy (\(x,_) (y,_) -> x `compare` y) (connectedTo l ++ connectedFrom l)
 
-groupConnected :: (Show a, Eq a) => ConnectList a -> ConnectList a
+groupConnected :: (Eq a) => ConnectList a -> ConnectList a
 groupConnected [(a,bs),(c,ds)]
     | a == c = [(a,bs++ds)]
     | otherwise = (a,bs):[(c,ds)]
@@ -49,18 +47,18 @@ smallConn l n = find (\(x,y) -> x == n) l
 oneConn :: (Show a, Eq a) => ConnectList a -> a -> Maybe (a,[a])
 oneConn l n = find (\(x,y) -> x == n && length y == 1) l
 
-getGroups :: (Show a, Eq a) => ConnectList a -> ConnectList a
+getGroups :: ConnectList a -> ConnectList a
 getGroups = sortBy (compare `on` length . snd)
 
-layoutGroups :: (Show a, Eq a, IsName a) => Diagram B -> [a] -> ConnectList a -> Diagram B
+layoutGroups :: (Show a, Eq a) => Diagram B -> [a] -> ConnectList a -> Diagram B
 layoutGroups d n [] = mempty
 layoutGroups d n ((a,bs):xs)
     | null xs = makeGroup d (a:bs) (n \\ (a:bs))
     | otherwise = layoutGroups (makeGroup d (a:bs) (n \\ (a:bs))) n xs
 
-makeGroup :: (Show a, Eq a, IsName a) => Diagram B -> [a] -> [a] -> Diagram B
-makeGroup d c others = withNames others (\otherSubs d -> 
-        withNames c (\subs@(s:ss) d -> (mconcat $ getSub <$> otherSubs) <> (atPoints (layoutVertices . length $ subs) $ getSub <$> subs)) d) d
+makeGroup :: (Show a, Eq a) => Diagram B -> [a] -> [a] -> Diagram B
+makeGroup d c others = withNames (show <$> others) (\otherSubs d -> 
+        withNames (show <$> c) (\subs@(s:ss) d -> (mconcat $ getSub <$> otherSubs) <> (atPoints (layoutVertices . length $ subs) $ getSub <$> subs)) d) d
           
 drawArrow :: Settings -> String -> String -> Diagram B -> Diagram B
 drawArrow s a b d
@@ -69,33 +67,30 @@ drawArrow s a b d
     where arrowOpts1 = with & headLength .~ dynamicHead s & shaftStyle %~ lw (dynamicThick s)
           arrowOpts2 = with & headLength .~ dynamicHead s & shaftStyle %~ lw (dynamicThick s) & arrowShaft .~ arc xDir (4/6 @@ turn)
 
-initialPositions :: Int -> [String] -> Diagram B
-initialPositions 1 n = cat' (r2 (-1,1)) (with & catMethod .~ Distrib & sep .~ 0.5) $ node 0.1 0.1 <$> n
-initialPositions 2 n = hsep 0.3 $ node 0.1 0.1 <$> n
+initialPositions :: (Draw a) => Int -> [a] -> Diagram B
+initialPositions 1 n = cat' (r2 (-1,1)) (with & catMethod .~ Distrib & sep .~ 0.5) $ draw <$> n
+initialPositions 2 n = hsep 0.3 $ draw <$> n
 
-connectedOnlyDiagram :: (Show a, IsName a) => [a] -> [(a,a)] -> Diagram B -> Diagram B
-connectedOnlyDiagram names connections initialDiagram = layoutGroups initialDiagram names $ getGroups (connected names connections)
+connectedOnlyDiagram :: [Node] -> [(Node,Node)] -> Diagram B -> Diagram B
+connectedOnlyDiagram nodes connections initialDiagram = layoutGroups initialDiagram nodes $ getGroups (connected nodes connections)
 
-overlayedOnlyDiagram :: [String] -> [String] -> Diagram B
-overlayedOnlyDiagram names connectedOnlyList = hsep 0.2 $ node 0.1 0.1 <$> (names \\ connectedOnlyList)
+overlayedOnlyDiagram :: (Draw a, Eq a) => [a] -> [a] -> Diagram B
+overlayedOnlyDiagram nodes connectedOnlyList = hsep 0.2 $ draw <$> (nodes \\ connectedOnlyList)
 
-listConnectedOnly :: (Show a, Eq a) => [(a,a)] -> [a]
+listConnectedOnly :: (Eq a) => [(a,a)] -> [a]
 listConnectedOnly connections = nub $ foldr (\(a,bs) acc -> a : bs ++ acc) [] (connectedTo connections ++ connectedFrom connections)
 
-drawFlatAdaptive :: (Show a) => Graph a -> Diagram B
+drawFlatAdaptive :: (Show a, Eq a) => (a -> Diagram B) -> Graph a -> Diagram B
 drawFlatAdaptive = drawFlatAdaptive' defaultSettings
 
-drawFlatAdaptive' :: (Show a) => (Graph a -> Settings) -> Graph a -> Diagram B
-drawFlatAdaptive' settingsF graph = (foldr (\(a,b) acc -> drawArrow s a b acc) outDiag connections) # frame 0.1
+drawFlatAdaptive' :: (Show a, Eq a) => (Graph a -> Settings) -> (a -> Diagram B) -> Graph a -> Diagram B
+drawFlatAdaptive' settingsF drawF g = (foldr (\(a,b) acc -> drawArrow s (name a) (name b) acc) outDiag connections) # frame 0.1
     where outDiag = overlayedDiagram ||| strutX 0.1 ||| connectedDiagram
-          overlayedDiagram = overlayedOnlyDiagram names connectedNames
-          connectedDiagram = connectedOnlyDiagram connectedNames connections . initialPositions (initPos s) $ connectedNames
-          connectedNames = listConnectedOnly connections
-          names = nub namesWDup
-          connections = nub connectionsWDup
-          (ProcessedGraph namesWDup connectionsWDup) = getVertices g
-          g = show <$> graph
-          s = settingsF graph
+          overlayedDiagram = overlayedOnlyDiagram nodes connectedNodes
+          connectedDiagram = connectedOnlyDiagram connectedNodes connections . initialPositions (initPos s) $ connectedNodes
+          connectedNodes = listConnectedOnly connections
+          (ProcessedGraph nodes connections) = getVertices drawF g
+          s = settingsF g
 
 -- drawFlatAdaptive :: (Show a) => FilePath -> Dimensions -> Graph a -> Diagram B
 -- drawFlatAdaptive path dims g = drawFlatAdaptive' (defaultSettings g) path dims g

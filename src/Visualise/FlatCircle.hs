@@ -25,19 +25,17 @@ data Settings = Settings { dynamicHead :: Measure Double
 layoutPoly :: (V t ~ V2, TrailLike t) => Int -> t
 layoutPoly n = regPoly n 1
 
-drawFlatCircle :: (Show a) => Graph a -> Diagram B
+drawFlatCircle :: (Show a, Eq a) => (a -> Diagram B) -> Graph a -> Diagram B
 drawFlatCircle = drawFlatCircle' defaultSettings
 
-drawFlatCircle' :: (Show a) => (Graph a -> Settings) -> Graph a -> Diagram B
-drawFlatCircle' settingsF graph = mconcat connected # frame 0.1
-    where connected = map (\(a,b) -> connectOutside' arrowOpts a b diag) connections
-          diag = atPoints vertices (node 0.1 0.1 <$> names)
+drawFlatCircle' :: (Show a, Eq a) => (Graph a -> Settings) -> (a -> Diagram B) -> Graph a -> Diagram B
+drawFlatCircle' settingsF drawF g = mconcat connected # frame 0.1
+    where connected = map (\(a,b) -> connectOutside' arrowOpts (name a) (name b) noConnDiag) connections
+          noConnDiag = atPoints vertices (diag <$> nodes)
           vertices = trailVertices layout
-          layout   = layoutPoly $ length names
-          names = nub namesWDup
-          (ProcessedGraph namesWDup connections) = getVertices g
-          g = show <$> graph
-          s = settingsF graph
+          layout   = layoutPoly $ countVertices g
+          (ProcessedGraph nodes connections) = getVertices drawF g
+          s = settingsF g
           arrowOpts = with & headLength .~ dynamicHead s & shaftStyle %~ lw (dynamicThick s)
 
 defaultSettings :: Graph a -> Settings

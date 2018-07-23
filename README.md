@@ -23,6 +23,8 @@ data Graph a = Empty
              | Connect (Graph a) (Graph a)
 ```
 
+Where `a` can be of the type `String`, `Char`, `Int` or even `Graph b` (i.e. a vertex can be another graph).
+
 ## Circular Flat Graphs
 The `Visualise.FlatCircle` module can be used to draw a flat graph with each node being at a vertex of a regular polygon with n sides, where n is the number of nodes the graph has. This works best for small graphs.
 
@@ -62,7 +64,7 @@ It works by grouping together connected nodes, going up in group size.
 ## Directed Acyclic Graphs
 Directed graphs with no cycles can be drawn as trees using the `Visualise.DAG` module, using the Coffman-Graham algorithm to produce the layout. The indirect dependancies are removed/reduced in order to simplify the graph (so therefore the graph has to be a partial order graph) before topological ordering using Kahn's algorithm is carried out, then the nodes are drawn in layers and connected.
 
-The functions `drawDAG` and `drawDAG'` can be used to draw the graph, with the adjustable settings again being the same as `Visualise.FlatCircle` and `Visualise.FlatAdaptive` but with two added parameters: the horizontal and vertical separation between nodes. This results in the `Settings` type being defined like so:
+The functions `drawDAG` and `drawDAG'` can be used to draw the graph, with the adjustable settings again being the same as `Visualise.FlatCircle` and `Visualise.FlatAdaptive` but with two added parameters: the horizontal (default `0.2`) and vertical (default `0.3`) separation between nodes. This results in the `Settings` type being defined like so:
 ```Haskell
 data Settings = Settings { layerSpacing :: Double
                          , nodeSpacing :: Double
@@ -71,7 +73,7 @@ data Settings = Settings { layerSpacing :: Double
                          }
 ```
 
-However unlike the other drawing drawing modules, this module has two extra drawing functions `drawDAGPartialOrder` and `drawDAGPartialOrder'` which remove indirect connections for partial order graphs before the graph is drawn, resulting in a cleaner graph drawing.
+However unlike the other drawing drawing modules, this module has two extra drawing functions `drawDAGPartialOrder` and `drawDAGPartialOrder'` which remove indirect connections for partial order graphs before the graph is drawn, resulting in a cleaner and clearer graph drawing.
 
 ### Issues
 * Sometimes arrows can cross nodes
@@ -115,7 +117,7 @@ A set of graphs will be drawn by each of the algorithms, as required, the graphs
 <img src="examples/flat_circle_example_1.svg" />
 
 ### With `Visualise.DAG`
-#### With `drawDAG` and `drawDAGPartialOrder` respectively
+#### With `drawDAG'` and `drawDAGPartialOrder` respectively
 
 <table>
 	<tr>
@@ -123,6 +125,12 @@ A set of graphs will be drawn by each of the algorithms, as required, the graphs
 		<td><img src="examples/DAG_partial_order_example_1.svg" /></td>
 	</tr>
 </table>
+
+`drawDag'` was used with the following `Settings` function to reduce arrow and node overlaps by reducing the spacing between layers and increasing the spacing within layers, while maintaining default arrow characteristics from `defaultSettings`:
+```Haskell
+settingsF :: Graph a -> Settings
+settingsF g = Settings 0.1 0.5 (dynamicStyle normal $ countVertices g) (dynamicStyle thin $ countVertices g)
+```
 
 ### With `Visualise.Hierarchical`
 <img src="examples/hierarchical_example_1.svg" />

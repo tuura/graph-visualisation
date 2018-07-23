@@ -29,7 +29,7 @@ data Settings = Settings { layerSpacing :: Double
 
 data LayerPosition = LayerLeft | LayerMiddle | LayerRight deriving (Eq)
 
-reduction :: ConnectList -> ConnectList -> ConnectList
+reduction :: (Eq a) => ConnectList a -> ConnectList a -> ConnectList a
 reduction [] _ = []
 reduction ((x,ys):zs) extras = new : reduction zs (new : extras)
     where new = (x,nub $ foldr check ys ys)
@@ -37,16 +37,16 @@ reduction ((x,ys):zs) extras = new : reduction zs (new : extras)
           toCheck = extras ++ zs
 
 
-getRoots :: [Node] -> ConnectList -> [Node]
+getRoots :: (Eq a) => [a] -> ConnectList a -> [a]
 getRoots = foldr (\(x,ys) acc -> delete x acc)
 
 -- Topological sorting
-getLevelList :: [Node] -> ConnectList -> [Node]
+getLevelList :: (Eq a) => [a] -> ConnectList a -> [a]
 getLevelList [] _ = []
 getLevelList q firstCTo = let (queue,list,cTo) = foldThroughRoots q firstCTo
                           in list ++ getLevelList queue cTo
           
-foldThroughRoots :: [Node] -> ConnectList -> ([Node], [Node], ConnectList)
+foldThroughRoots :: (Eq a) => [a] -> ConnectList a -> ([a], [a], ConnectList a)
 foldThroughRoots queue firstCTo = foldr (\root (accQueue,accList,accCTo) -> 
                                     let newList = (root : accList) -- Prepend the current root node to the list
                                         folded = foldThroughConnectedNodes root accQueue accCTo -- Fold over the nodes connected to the root node
@@ -54,28 +54,28 @@ foldThroughRoots queue firstCTo = foldr (\root (accQueue,accList,accCTo) ->
                                   ([],[],firstCTo) queue -- Start by folding over the root nodes with no incoming connections
 
 
-foldThroughConnectedNodes :: Node -> [Node] -> ConnectList -> ([Node], ConnectList)
+foldThroughConnectedNodes :: (Eq a) => a -> [a] -> ConnectList a -> ([a], ConnectList a)
 foldThroughConnectedNodes root queue cTo = foldr (\b (accQueue,acc2) -> -- b is the current node connected to root Node, acc1 is the current list, acc2 is the current adjacency list
                                               if length (getEdgesTo b acc2) <= 1 then (accQueue ++ [b], deleteConnection root b acc2) -- If the node b has no more incoming edges it is added to the list and removed from the adjacency list
                                               else (accQueue, deleteConnection root b acc2)) -- Otherwise the list remains the same but it is still removed from the adjacency list
                                               (queue,cTo) (getEdgesFrom root cTo)
 
-deleteConnection :: Node -> Node -> ConnectList -> ConnectList
+deleteConnection :: (Eq a) => a -> a -> ConnectList a -> ConnectList a
 deleteConnection x r cTo = (\(a,bs) -> (a,delete x bs)) <$> cTo
 
-dependsOn :: Node -> Node -> ConnectList -> Bool
+dependsOn :: (Eq a) => a -> a -> ConnectList a -> Bool
 dependsOn a b cTo = b `elem` getEdgesTo a cTo-- If a depends on b
 
-getEdgesTo :: Node -> ConnectList -> [Node]
+getEdgesTo :: (Eq a) => a -> ConnectList a -> [a]
 getEdgesTo x cTo = if isJust $ getEdgesToTuple x cTo then let (Just tup) = getEdgesToTuple x cTo in snd tup else []
 
-getEdgesToTuple :: Node -> ConnectList -> Maybe (Node,[Node])
+getEdgesToTuple :: (Eq a) => a -> ConnectList a -> Maybe (a,[a])
 getEdgesToTuple x = find (\(a,bs) -> a == x)
 
-getEdgesFrom :: Node -> ConnectList -> [Node]
+getEdgesFrom :: (Eq a) => a -> ConnectList a -> [a]
 getEdgesFrom x = foldr (\(a,bs) acc -> if x `elem` bs then a : acc else acc) []
 
-getLevels :: [Node] -> [Node] -> [(Node,[Node])] -> [[Node]]
+getLevels :: (Eq a) => [a] -> [a] -> [(a,[a])] -> [[a]]
 getLevels [] _ _ = []
 getLevels l lastLevel cTo = foldLevel : getLevels (l \\ foldLevel) foldLevel cTo
     where foldLevel = let (left,right,_) = foldr (\x (accL,accR,flag) -> if flag || moveToNext x accL accR then (accL,accR,True) 
@@ -89,21 +89,21 @@ getLevels l lastLevel cTo = foldLevel : getLevels (l \\ foldLevel) foldLevel cTo
 
 
 
-reducedConnections :: ConnectList -> [(Node,Node)]
+reducedConnections :: ConnectList a -> [(a,a)]
 reducedConnections = foldr (\(x,ys) acc -> zip ys (repeat x) ++ acc) []
 
-layerDiff :: Node -> Node -> [[Node]] -> Int
+layerDiff :: (Eq a) => a -> a -> [[a]] -> Int
 layerDiff a b l = fst (foldGraphLayers a l) - fst (foldGraphLayers b l)
 
-elemPosition :: Node -> [[Node]] -> LayerPosition
+elemPosition :: (Eq a) => a -> [[a]] -> LayerPosition
 elemPosition x l = snd $ foldGraphLayers x l
 
-foldGraphLayers :: Node -> [[Node]] -> (Int,LayerPosition)
+foldGraphLayers :: (Eq a) => a -> [[a]] -> (Int,LayerPosition)
 foldGraphLayers x l = let ((_,layerNum), isLeft) = fold in (layerNum, isLeft)
     where fold = foldr (\xs ((c1,c2),isLeft) -> if x `elem` xs then ((c1,c1), positionInGivenLayer x xs)
                                                 else ((c1 + 1,c2),isLeft)) ((0,0),LayerMiddle) l
 
-positionInGivenLayer :: (Node) -> [Node] -> LayerPosition
+positionInGivenLayer :: (Eq a) => (a) -> [a] -> LayerPosition
 positionInGivenLayer x ys
     | position == midPoint = LayerMiddle
     | position < midPoint = LayerLeft
@@ -113,11 +113,11 @@ positionInGivenLayer x ys
               getElemIndex (Just i) = i
               getElemIndex Nothing = 0
 
-visualiseLayers :: Settings -> (a -> Diagram B) -> [[Node]] -> Diagram B
+visualiseLayers :: (Draw a) => Settings -> [[a]] -> Diagram B
 -- visualiseLayers :: _
-visualiseLayers s drawF levelled = vsep (layerSpacing s) $ foldl (\acc level -> center (hsep (nodeSpacing s) $ 
+visualiseLayers s levelled = vsep (layerSpacing s) $ foldl (\acc level -> center (hsep (nodeSpacing s) $ 
                                                                                        -- (draw 0.1 0.1 (drawDAG' (\_ -> s))) <$> level
-                                                                                       diag <$> level
+                                                                                       draw <$> level
                                                                                  ) : acc)
                                                      [] levelled
 
@@ -126,8 +126,8 @@ visualiseLayers s drawF levelled = vsep (layerSpacing s) $ foldl (\acc level -> 
 --     where degreeOne = getArrowPoints pos (1/2 @@ turn) (0 @@ turn) (-1/4 @@ turn)
           -- degreeTwo = getArrowPoints pos (1/2 @@ turn) (0 @@ turn) (1/4 @@ turn)
 
-connectNodes :: Settings -> (a -> Diagram B) -> ArrowOpts Double -> Node -> Node -> [[Node]] -> Maybe LayerPosition -> Diagram B
-connectNodes s drawF arrowOptsF n1 n2 levelled pos = connectOutside' arrowOptsF (name n1) (name n2) $ visualiseLayers s drawF levelled
+connectNodes :: (Show a, Draw a) => Settings -> ArrowOpts Double -> a -> a -> [[a]] -> Maybe LayerPosition -> Diagram B
+connectNodes s arrowOptsF n1 n2 levelled pos = connectOutside' arrowOptsF (show n1) (show n2) $ visualiseLayers s levelled
 
 -- connectNodes :: Settings -> ArrowOpts Double -> String -> String -> [[String]] -> Maybe LayerPosition -> Diagram B
 -- connectNodes s arrowOptsF n1 n2 levelled pos = connectOutside' arrowOptsF n1 n2 $ visualiseLayers s levelled
@@ -140,13 +140,13 @@ getArrowPoints posM a b c = if isJust posM
                                          else c 
                             else c
 
-visualiseDAG :: Settings -> (a -> Diagram B) -> [Node] -> [(Node,Node)] -> ConnectList -> Diagram B
-visualiseDAG s drawF nodes rawConnections connectedList = outDiag <> boundingRect outDiag
+visualiseDAG :: (Show a, Eq a, Draw a) => Settings -> [a] -> [(a,a)] -> ConnectList a -> Diagram B
+visualiseDAG s nodes rawConnections connectedList = outDiag <> boundingRect outDiag
     -- where connectedDiagram = map (\(a,b) -> (if abs (layerDiff a b levelled) > 1 
     --                                          then connectNodes (arrowOpts1 & (arrowOpts2 a b)) a b levelled $ Just (elemPosition a levelled) 
     --                                          else connectNodes arrowOpts1 a b levelled Nothing)) rawConnections
-    where outDiag = (if length rawConnections > 0 then mconcat connectedDiagram else visualiseLayers s drawF levelled) # frame 0.1
-          connectedDiagram = map (\(a,b) -> connectNodes s drawF arrowOpts1 a b levelled Nothing) rawConnections
+    where outDiag = (if length rawConnections > 0 then mconcat connectedDiagram else visualiseLayers s levelled) # frame 0.1
+          connectedDiagram = map (\(a,b) -> connectNodes s arrowOpts1 a b levelled Nothing) rawConnections
           arrowOpts1 = with & headLength .~ dynamicHead s & shaftStyle %~ lw (dynamicThick s)
           arrowOpts2 a b = let posA = elemPosition a levelled 
                                posB = elemPosition b levelled
@@ -172,7 +172,7 @@ drawDAG :: (Show a, Eq a) => (a -> Diagram B) -> Graph a -> Diagram B
 drawDAG = drawDAG' defaultSettings
 
 drawDAG' :: (Show a, Eq a) => (Graph a -> Settings) -> (a -> Diagram B) -> Graph a -> Diagram B
-drawDAG' settingsF drawF g = visualiseDAG s drawF nodes connections connectedList
+drawDAG' settingsF drawF g = visualiseDAG s nodes connections connectedList
     where connectedList = connectedFrom connections
           nodes = nub nodesWDuplicates
           connections = nub . reverse $ connectionsWDuplicates
