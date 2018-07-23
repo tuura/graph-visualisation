@@ -112,20 +112,20 @@ The table below gives the figures from the paper on the left and their visualisa
 
 <table>
     <tr>
-        <td><img src="examples/fdl-fig-3/fdl_3a_paper.svg" /></td>
-        <td><img src="examples/fdl-fig-3/fdl_3a_dag.png" /></td>
+        <td><img src="examples/fdl-fig-3/fdl_3a_paper.png" /></td>
+        <td><img src="examples/fdl-fig-3/fdl_3a_dag.svg" /></td>
     </tr>
     <tr>
-        <td><img src="examples/fdl-fig-3/fdl_3b_paper.svg" /></td>
-        <td><img src="examples/fdl-fig-3/fdl_3b_dag.png" /></td>
+        <td><img src="examples/fdl-fig-3/fdl_3b_paper.png" /></td>
+        <td><img src="examples/fdl-fig-3/fdl_3b_dag.svg" /></td>
     </tr>
     <tr>
-        <td><img src="examples/fdl-fig-3/fdl_3c_paper.svg" /></td>
-        <td><img src="examples/fdl-fig-3/fdl_3c_dag.png" /></td>
+        <td><img src="examples/fdl-fig-3/fdl_3c_paper.png" /></td>
+        <td><img src="examples/fdl-fig-3/fdl_3c_dag.svg" /></td>
     </tr>
     <tr>
-        <td><img src="examples/fdl-fig-3/fdl_3d_paper.svg" /></td>
-        <td><img src="examples/fdl-fig-3/fdl_3d_dag.png" /></td>
+        <td><img src="examples/fdl-fig-3/fdl_3d_paper.png" /></td>
+        <td><img src="examples/fdl-fig-3/fdl_3d_dag.svg" /></td>
     </tr>
 </table>
 
