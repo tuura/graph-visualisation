@@ -107,6 +107,28 @@ data Settings = Settings { colF :: Int -> Colour Double
 GraphGen is a small Java program which generates a random graph to be used for testing with a given number of layers.
 
 ## Example Drawings
+* The graphs from figure 3 in the [FDL paper](https://github.com/tuura/fdl17-paper) will be drawn using `Visualise.DAG`.
+The table below gives the figures from the paper on the left and their visualisations using `graph-visualisation` on the right:
+
+<table>
+    <tr>
+        <td><img src="examples/fdl-fig-3/fdl_3a_paper.svg" /></td>
+        <td><img src="examples/fdl-fig-3/fdl_3a_dag.png" /></td>
+    </tr>
+    <tr>
+        <td><img src="examples/fdl-fig-3/fdl_3b_paper.svg" /></td>
+        <td><img src="examples/fdl-fig-3/fdl_3b_dag.png" /></td>
+    </tr>
+    <tr>
+        <td><img src="examples/fdl-fig-3/fdl_3c_paper.svg" /></td>
+        <td><img src="examples/fdl-fig-3/fdl_3c_dag.png" /></td>
+    </tr>
+    <tr>
+        <td><img src="examples/fdl-fig-3/fdl_3d_paper.svg" /></td>
+        <td><img src="examples/fdl-fig-3/fdl_3d_dag.png" /></td>
+    </tr>
+</table>
+
 A set of graphs will be drawn by each of the algorithms, as required, the graphs are of the type defined in `Algebra.Graph`:
 * Firstly the partial order graph `(1 * ((2 * ((4 * 7) + (5 * 7))) + (3 * (6 * (5 * 7)))))`
 
