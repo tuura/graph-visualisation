@@ -90,7 +90,7 @@ getLevels l lastLevel cTo = foldLevel : getLevels (l \\ foldLevel) foldLevel cTo
 
 
 reducedConnections :: ConnectList a -> [(a,a)]
-reducedConnections = foldr (\(x,ys) acc -> zip ys (repeat x) ++ acc) []
+reducedConnections = reverse . foldr (\(x,ys) acc -> zip ys (repeat x) ++ acc) []
 
 layerDiff :: (Eq a) => a -> a -> [[a]] -> Int
 layerDiff a b l = fst (foldGraphLayers a l) - fst (foldGraphLayers b l)
@@ -140,14 +140,14 @@ getArrowPoints posM a b c = if isJust posM
                                          else c 
                             else c
 
-visualiseDAG :: (Show a, Eq a, Draw a) => Settings -> [a] -> [(a,a)] -> ConnectList a -> Diagram B
-visualiseDAG s nodes rawConnections connectedList = outDiag <> boundingRect outDiag
+visualiseDAG :: (Show a, Eq a, Draw a) => Settings -> [a] -> [(a,a)] -> ConnectList a -> Bool-> Diagram B
+visualiseDAG s nodes rawConnections connectedList directed = outDiag <> boundingRect outDiag
     -- where connectedDiagram = map (\(a,b) -> (if abs (layerDiff a b levelled) > 1 
     --                                          then connectNodes (arrowOpts1 & (arrowOpts2 a b)) a b levelled $ Just (elemPosition a levelled) 
     --                                          else connectNodes arrowOpts1 a b levelled Nothing)) rawConnections
     where outDiag = (if length rawConnections > 0 then mconcat connectedDiagram else visualiseLayers s levelled) # frame 0.1
           connectedDiagram = map (\(a,b) -> connectNodes s arrowOpts1 a b levelled Nothing) rawConnections
-          arrowOpts1 = with & headLength .~ dynamicHead s & shaftStyle %~ lw (dynamicThick s)
+          arrowOpts1 = with & shaftStyle %~ lw (dynamicThick s) & if directed then headLength .~ dynamicHead s else arrowHead .~ noHead
           arrowOpts2 a b = let posA = elemPosition a levelled 
                                posB = elemPosition b levelled
                          in if posA == LayerLeft || (posA == LayerMiddle && posB == LayerLeft) 
@@ -156,27 +156,23 @@ visualiseDAG s nodes rawConnections connectedList = outDiag <> boundingRect outD
           levelled = reverse . getLevels topList [] $ connectedList
           topList = reverse . nub . reverse $ getLevelList (getRoots nodes connectedList) connectedList
 
--- drawDAGPartialOrder :: (Show a, Eq a) => Graph a -> Diagram B
--- drawDAGPartialOrder = drawDAGPartialOrder' defaultSettings
+drawDAGPartialOrder :: (Show a, Eq a, Countable a) => Bool -> (a -> Diagram B) -> Graph a -> Diagram B
+drawDAGPartialOrder = drawDAGPartialOrder' defaultSettings
 
--- drawDAGPartialOrder' :: (Show a, Eq a) => (Graph a -> Settings) -> Graph a -> Diagram B
--- drawDAGPartialOrder' settingsF g = visualiseDAG s names newConnections reduced
---     where newConnections = reducedConnections reduced
---           reduced = reduction (connectedFrom connections) []
---           names = nub namesWDuplicates
---           connections = nub connectionsWDuplicates
---           (ProcessedGraph namesWDuplicates connectionsWDuplicates) = getVertices g
---           s = settingsF g
+drawDAGPartialOrder' :: (Show a, Eq a, Countable a) => (Graph a -> Settings) -> Bool -> (a -> Diagram B) -> Graph a -> Diagram B
+drawDAGPartialOrder' settingsF directed drawF g = visualiseDAG s nodes newConnections reduced directed
+    where newConnections = reducedConnections reduced
+          reduced = reduction (connectedFrom connections) []
+          (ProcessedGraph nodes connections) = getVertices drawF g
+          s = settingsF g
 
-drawDAG :: (Show a, Eq a) => (a -> Diagram B) -> Graph a -> Diagram B
+drawDAG :: (Show a, Eq a, Countable a) => Bool -> (a -> Diagram B) -> Graph a -> Diagram B
 drawDAG = drawDAG' defaultSettings
 
-drawDAG' :: (Show a, Eq a) => (Graph a -> Settings) -> (a -> Diagram B) -> Graph a -> Diagram B
-drawDAG' settingsF drawF g = visualiseDAG s nodes connections connectedList
-    where connectedList = connectedFrom connections
-          nodes = nub nodesWDuplicates
-          connections = nub . reverse $ connectionsWDuplicates
-          (ProcessedGraph nodesWDuplicates connectionsWDuplicates) = getVertices drawF g
+drawDAG' :: (Show a, Eq a, Countable a) => (Graph a -> Settings) -> Bool -> (a -> Diagram B) -> Graph a -> Diagram B
+drawDAG' settingsF directed drawF g = visualiseDAG s nodes (reverse connections) connectedList directed
+    where connectedList = connectedFrom (reverse connections)
+          (ProcessedGraph nodes connections) = getVertices drawF g
           s = settingsF g
 
 -- test s g = draw 10 10 (drawDAG' s) g
@@ -185,5 +181,5 @@ drawDAG' settingsF drawF g = visualiseDAG s nodes connections connectedList
 -- drawGraph :: (Eq a, Show a) => Graph a -> Diagram B 
 -- drawGraph g = draw drawDAG g
 
-defaultSettings :: Graph a -> Settings
-defaultSettings g = Settings 0.2 0.3 (dynamicStyle normal $ countVertices g) (dynamicStyle thin $ countVertices g)
+defaultSettings :: (Countable a) => Graph a -> Settings
+defaultSettings g = Settings 0.2 0.3 (dynamicStyle small $ count g) (dynamicStyle thin $ count g)

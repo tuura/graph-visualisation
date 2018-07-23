@@ -100,8 +100,8 @@ drawFlatAdaptive' settingsF drawF g = (foldr (\(a,b) acc -> drawArrow s (name a)
 
 
 defaultSettings :: Graph a -> Settings
-defaultSettings g = Settings (dynamicStyle small $ countVertices g) 
-                             (dynamicStyle thin $ countVertices g)
+defaultSettings g = Settings (dynamicStyle small $ count g) 
+                             (dynamicStyle thin $ count g)
                              1
 
 -- main = draw "../tests/test_sep.svg" (Just 1000,Nothing) $ drawFlatAdaptive (Overlay (Connect (Connect (Connect (Vertex 1) (Connect (Vertex 2) (Vertex 3))) (Vertex 4)) (Overlay (Overlay (Overlay (Vertex 5) (Vertex 6)) (Connect (Connect (Vertex 7) (Connect (Overlay (Connect (Overlay (Connect (Vertex 8) (Connect (Vertex 9) (Vertex 10))) (Vertex 11)) (Vertex 12)) (Vertex 13)) (Vertex 14))) (Vertex 15))) (Overlay (Vertex 16) (Connect (Overlay (Connect (Vertex 17) (Connect (Overlay (Vertex 18) (Vertex 19)) (Vertex 20))) (Vertex 21)) (Overlay (Overlay (Overlay (Vertex 22) (Vertex 23)) (Connect (Connect (Vertex 24) (Vertex 25)) (Vertex 26))) (Vertex 27)))))) (Vertex 28))
