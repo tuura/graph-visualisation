@@ -8,6 +8,7 @@
 
 module Visualise (
     ProcessedGraph(..),
+    Directed(..),
 
     Node, Dimensions, ConnectList,
 
@@ -63,6 +64,7 @@ instance Draw Node where
 
 data ProcessedGraph = ProcessedGraph [Node] [(Node, Node)] deriving (Show)
 
+data Directed = Directed | Undirected deriving (Eq)
 
 type Dimensions = (Maybe Double, Maybe Double)
 
