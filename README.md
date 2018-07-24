@@ -15,6 +15,12 @@ The `Visualise` module has an impure function named `saveSVG` which can be used 
 ```
 This means that it requires an output file path, a set of dimensions (a tuple of `Maybe Double` values for width and height, but only one is required for a diagram to successfully be scaled) and a `Diagram`. The function will provide an IO action to create the file, which will be in the SVG format. To change the type of file format the code changes would be straightforward.
 
+Another useful function in `Visualise` is `dynamicStyle` which produces a `Measure Double` from a default size and the size of a graph:
+```Haskell
+dynamicStyle :: Measure Double -> Int -> Measure Double
+dynamicStyle def graphSize = def * 10/fromIntegral graphSize
+```
+
 A graph is defined like so:
 ```Haskell
 data Graph a = Empty
@@ -23,7 +29,44 @@ data Graph a = Empty
              | Connect (Graph a) (Graph a)
 ```
 
-Where `a` can be of the type `String`, `Char`, `Int` or even `Graph b` (i.e. a vertex can be another graph).
+Where `a` can be of the type `String`, `Char`, `Int` or even `Graph b` (i.e. a vertex can be another graph, this will be discussed in the individual module descriptions).
+
+## Directed Acyclic Graphs
+The `Visualise.DAG` module is the most developed module.
+
+Graphs with no cycles can be drawn as trees using the `Visualise.DAG` module. There are two main drawing functions which use default settings and two extra functions which corrispond to the main two but add a settings parameter. `drawDAG` draws the graph will all its connections whereas `drawDAGPartialOrder` uses the Coffman-Graham algorithm to produce the layout, which removes/reduces the indirect dependancies in order to simplify the (partial order) graph. Topological ordering using Kahn's algorithm is carried out for both functions, followed then by the nodes being drawn in layers and then connected.
+
+The two primary functions have the same type signature:
+```Haskell
+(Show a, Eq a, Countable a) => (a -> Diagram B) -> Graph a -> Diagram B
+```
+
+The customisable settings are customisable by giving the secondary drawing functions a function which takes a graph and returns a settings instance:
+```Haskell
+data Settings = Settings { layerSpacing :: Double
+                         , nodeSpacing :: Double
+                         , graphPadding :: Double
+                         , dynamicHead :: Measure Double
+                         , dynamicThick :: Measure Double
+                         , directed :: Directed
+                         }
+```
+
+Which allow the spacing between nodes and layers, the padding around the graph, the arrowhead size/shaft thickness and whether the graph is directed (so if edges should have arrows) to be set. 
+The directed type is given by:
+```Haskell
+data Directed = Directed | Undirected deriving (Eq)
+```
+
+The default settings function is:
+```Haskell
+defaultSettings :: (Countable a) => Graph a -> Settings
+defaultSettings g = Settings 0.2 0.3 0.1 (dynamicStyle small $ count g) (dynamicStyle thin $ count g) Directed
+```
+
+### Issues
+* Sometimes arrows can cross nodes
+* Occasionally nodes are placed on the wrong layer
 
 ## Circular Flat Graphs
 The `Visualise.FlatCircle` module can be used to draw a flat graph with each node being at a vertex of a regular polygon with n sides, where n is the number of nodes the graph has. This works best for small graphs.
@@ -42,12 +85,6 @@ defaultSettings :: Graph a -> Settings
 defaultSettings g = Settings (dynamicStyle normal $ countVertices g) (dynamicStyle thin $ countVertices g)
 ```
 
-Where `dyanamicStyle` is a function in the main `Visualise` module which produces a `Measure Double` from a default size and the size of the graph:
-```Haskell
-dynamicStyle :: Measure Double -> Int -> Measure Double
-dynamicStyle def graphSize = def * 10/fromIntegral graphSize
-```
-
 ### Issues
 * Currently does not work for nodes with self-loops
 
@@ -60,25 +97,6 @@ It works by grouping together connected nodes, going up in group size.
 ### Issues
 * Collisions between nodes
 * Arrows crossing each other
-
-## Directed Acyclic Graphs
-Directed graphs with no cycles can be drawn as trees using the `Visualise.DAG` module, using the Coffman-Graham algorithm to produce the layout. The indirect dependancies are removed/reduced in order to simplify the graph (so therefore the graph has to be a partial order graph) before topological ordering using Kahn's algorithm is carried out, then the nodes are drawn in layers and connected.
-
-The functions `drawDAG` and `drawDAG'` can be used to draw the graph, with the adjustable settings again being the same as `Visualise.FlatCircle` and `Visualise.FlatAdaptive` but with two added parameters: the horizontal (default `0.2`) and vertical (default `0.3`) separation between nodes. This results in the `Settings` type being defined like so:
-```Haskell
-data Settings = Settings { layerSpacing :: Double
-                         , nodeSpacing :: Double
-                         , dynamicHead :: Measure Double
-                         , dynamicThick :: Measure Double
-                         }
-```
-
-However unlike the other drawing drawing modules, this module has two extra drawing functions `drawDAGPartialOrder` and `drawDAGPartialOrder'` which remove indirect connections for partial order graphs before the graph is drawn, resulting in a cleaner and clearer graph drawing.
-
-### Issues
-* Sometimes arrows can cross nodes
-* Layer node orders could be improved
-* Occasionally nodes are placed on the wrong layer
 
 ## Hierarchical Graphs
 Hierarchical graphs can be drawn using the `Visualise.Hierarchical` module. 
@@ -100,6 +118,9 @@ data Settings = Settings { colF :: Int -> Colour Double
 
 ### Issues
 * Currently only works with DAGs
+
+# GraphViz Integration
+There is a fourth module which uses `Data.GraphViz` to get the layout of a graph and draws it using `Diagrams` with the help of the `diagrams-graphviz` library. The drawing function is called `drawWithGraphViz` and takes the `GraphvizCommand` to be used (see [here](https://hackage.haskell.org/package/graphviz-2999.20.0.2/docs/Data-GraphViz-Attributes-Complete.html#t:GraphvizCommand)), whether the graph 
 
 # Testing
 
