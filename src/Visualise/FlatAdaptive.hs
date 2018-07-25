@@ -9,7 +9,7 @@ module Visualise.FlatAdaptive (
     drawFlatAdaptive, drawFlatAdaptive'
 ) where
 
-import Visualise
+import Visualise.Common
 import Algebra.Graph
 import Diagrams.Prelude hiding (Empty)
 import Diagrams.Backend.SVG.CmdLine
@@ -17,12 +17,7 @@ import Diagrams.Path
 import Data.Char
 import Data.List
 import Data.Function
-
-
-data Settings = Settings { dynamicHead :: Measure Double
-                         , dynamicThick :: Measure Double
-                         , initPos :: Int
-                     }
+import Data.Maybe
 
 layoutPoly :: (V t ~ V2, TrailLike t) => Int -> t
 layoutPoly n = regPoly n 0.5
@@ -65,8 +60,8 @@ drawArrow :: Settings -> String -> String -> Diagram B -> Diagram B
 drawArrow s a b d
     | a == b = connectPerim' arrowOpts2 a b (0 @@ turn) (-1/2 @@ turn) d
     | otherwise = connectOutside' arrowOpts1 a b d
-    where arrowOpts1 = with & headLength .~ dynamicHead s & shaftStyle %~ lw (dynamicThick s)
-          arrowOpts2 = with & headLength .~ dynamicHead s & shaftStyle %~ lw (dynamicThick s) & arrowShaft .~ arc xDir (4/6 @@ turn)
+    where arrowOpts1 = with & shaftStyle %~ lw (dynamicThick s) & if directed s == Directed then headLength .~ dynamicHead s else arrowHead .~ noHead
+          arrowOpts2 = with & shaftStyle %~ lw (dynamicThick s) & arrowShaft .~ arc xDir (4/6 @@ turn) & if directed s == Directed then headLength .~ dynamicHead s else arrowHead .~ noHead
 
 initialPositions :: (Draw a) => Int -> [a] -> Diagram B
 initialPositions 1 n = cat' (r2 (-1,1)) (with & catMethod .~ Distrib & sep .~ 0.5) $ draw <$> n
@@ -81,15 +76,15 @@ overlayedOnlyDiagram nodes connectedOnlyList = hsep 0.2 $ draw <$> (nodes \\ con
 listConnectedOnly :: (Eq a) => [(a,a)] -> [a]
 listConnectedOnly connections = nub $ foldr (\(a,bs) acc -> a : bs ++ acc) [] (connectedTo connections ++ connectedFrom connections)
 
-drawFlatAdaptive :: (Show a, Eq a, Countable a) => (a -> Diagram B) -> Graph a -> Diagram B
-drawFlatAdaptive = drawFlatAdaptive' defaultSettings
+drawFlatAdaptive :: (Show a, Eq a, Countable a) => Graph a -> Diagram B
+drawFlatAdaptive = drawFlatAdaptive' defaultAdaptiveSettings drawDefaultNode
 
 drawFlatAdaptive' :: (Show a, Eq a) => (Graph a -> Settings) -> (a -> Diagram B) -> Graph a -> Diagram B
 drawFlatAdaptive' settingsF drawF g = outDiag <> boundingRect outDiag
     where outDiag = (foldr (\(a,b) acc -> drawArrow s (name a) (name b) acc) beforeArrowsDiag connections) # frame 0.1
           beforeArrowsDiag = overlayedDiagram ||| strutX 0.1 ||| connectedDiagram
           overlayedDiagram = overlayedOnlyDiagram nodes connectedNodes
-          connectedDiagram = connectedOnlyDiagram connectedNodes connections . initialPositions (initPos s) $ connectedNodes
+          connectedDiagram = connectedOnlyDiagram connectedNodes connections . initialPositions (fromJust . initPos $ s) $ connectedNodes
           connectedNodes = listConnectedOnly connections
           (ProcessedGraph nodes connections) = getVertices drawF g
           s = settingsF g
@@ -101,10 +96,16 @@ drawFlatAdaptive' settingsF drawF g = outDiag <> boundingRect outDiag
 -- drawFlatAdaptive' s path dims g = draw path dims $ visualiseFlatAdaptive s g # frame 0.1
 
 
-defaultSettings :: (Countable a) => Graph a -> Settings
-defaultSettings g = Settings (dynamicStyle small $ count g) 
+defaultAdaptiveSettings :: (Countable a) => Graph a -> Settings
+defaultAdaptiveSettings g = Settings (dynamicStyle small $ count g) 
                              (dynamicStyle thin $ count g)
-                             1
+                             Directed
+                             Nothing
+                             Nothing
+                             Nothing
+                             Nothing
+                             Nothing
+                             (Just 1)
 
 -- main = draw "../tests/test_sep.svg" (Just 1000,Nothing) $ drawFlatAdaptive (Overlay (Connect (Connect (Connect (Vertex 1) (Connect (Vertex 2) (Vertex 3))) (Vertex 4)) (Overlay (Overlay (Overlay (Vertex 5) (Vertex 6)) (Connect (Connect (Vertex 7) (Connect (Overlay (Connect (Overlay (Connect (Vertex 8) (Connect (Vertex 9) (Vertex 10))) (Vertex 11)) (Vertex 12)) (Vertex 13)) (Vertex 14))) (Vertex 15))) (Overlay (Vertex 16) (Connect (Overlay (Connect (Vertex 17) (Connect (Overlay (Vertex 18) (Vertex 19)) (Vertex 20))) (Vertex 21)) (Overlay (Overlay (Overlay (Vertex 22) (Vertex 23)) (Connect (Connect (Vertex 24) (Vertex 25)) (Vertex 26))) (Vertex 27)))))) (Vertex 28))
 
