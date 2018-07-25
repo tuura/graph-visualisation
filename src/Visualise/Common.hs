@@ -149,7 +149,9 @@ getNode drawF x
     | otherwise = Node (fromLeft "" x) ((drawDefaultNode "") # named (fromLeft "" x))
 
 -- | Essentially a wrapper for the recursive 'namesAndConnections' function. Takes a Diagram-producing function and a Graph of the same type the Diagram function takes and then produces a 'ProcessedGraph' containign all the vertices (their names and diagrams) and connections of the original graph.
-getVertices :: (Eq a, Show a) => (a -> Diagram B) -> Graph a -> ProcessedGraph
+getVertices :: (Eq a, Show a) => (a -> Diagram B)   -- ^ A function that takes a vertex of the 'Graph' of type 'a' and produces a 'Diagram' from it.
+                              -> Graph a            -- ^ The 'Graph' to be folded through.
+                              -> ProcessedGraph     -- ^ Contains the produced 'Node''s and connections.
 getVertices drawF g = namesAndConnections drawF g ""
 
 -- | Recursively goes through the provided graph. Produces a list of 'Node''s (so the 'name' and associated 'Diagram' for each 'Vertex') and a list of connections between them.
@@ -166,7 +168,7 @@ namesAndConnections drawF (Connect a b) c = ProcessedGraph (nA `union` nB) ([(aA
     where (ProcessedGraph nA cA) = namesAndConnections drawF a ('l' : c)
           (ProcessedGraph nB cB) = namesAndConnections drawF b ('r' : c)
 
--- | Takes a list of connections and produces a corrisponding adjacency list (so tuples of a vertex and a list of vertuces dependant on it) by using folds and recursion.
+-- | Takes a list of connections and produces a corrisponding adjacency list (so tuples of a vertex and a list of vertices dependant on it) by using folds and recursion.
 connectedFrom :: (Eq a) => [(a,a)]          -- ^ A list of tuples where the first tuple element and second tuple element are used to corrispond to the 'Vertex' at the tail of the conenction and at the head of connection respectively.
                         -> ConnectList a    -- ^ The corrisponding adjacency list to the list of the connections.
 connectedFrom [] = []

@@ -17,16 +17,24 @@ import Diagrams.Path
 import Data.List
 import Data.Maybe
 
+-- | The 'LayerPosition' data type provides three type constructors, which can be used to determine if a 'Node' is on the left, middle or right of a layer.
 data LayerPosition = LayerLeft | LayerMiddle | LayerRight deriving (Eq)
 
-reduction :: (Eq a) => ConnectList a -> ConnectList a -> ConnectList a
+-- | Removes indirect dependancies from a graph represented as an adjacency list (as a 'ConnectList') using the Coffman-Graham algorithm, thus simplifying the graph. This can only be done on partial order graphs.
+-- Recursively goes through the 'ConnectList' folding through the list of connected vertices for each vertex, each time folding through the rest of the 'ConnectList'.
+-- If the first element of a tuple matches this current vertex then any elements in the list contained in the second element of the matched tuple are removed from the list currently being folded through.
+reduction :: (Eq a) => ConnectList a  -- ^ The graph in adjacency list form represented as a 'ConnectList'
+                    -> ConnectList a  -- ^ Used internally for recursion - the first part of the list that still needs to be checked through
+                    -> ConnectList a  -- ^ The resultant reduced adjacency list
 reduction [] _ = []
 reduction ((x,ys):zs) extras = new : reduction zs (new : extras)
     where new = (x,nub $ foldr check ys ys)
-          check y accOuter = foldr (\(a,bs) acc -> if y == a then acc \\ (acc `intersect` bs) else acc) accOuter toCheck
+          check y accOuter = foldr (\(a,bs) acc -> if y == a then acc \\ bs else acc) accOuter toCheck
           toCheck = extras ++ zs
 
-
+-- | Finds the vertices that don't depend on any other vertices - i.e. the roots of the graph.
+-- Folds through the graph's adjacency list and deletes 
+-- TODO: Fix confusion between connectedTo and connectedFrom
 getRoots :: (Eq a) => [a] -> ConnectList a -> [a]
 getRoots = foldr (\(x,ys) acc -> delete x acc)
 
@@ -54,7 +62,7 @@ deleteConnection :: (Eq a) => a -> a -> ConnectList a -> ConnectList a
 deleteConnection x r cTo = (\(a,bs) -> (a,delete x bs)) <$> cTo
 
 dependsOn :: (Eq a) => a -> a -> ConnectList a -> Bool
-dependsOn a b cTo = b `elem` getEdgesTo a cTo-- If a depends on b
+dependsOn a b cTo = b `elem` getEdgesTo a cTo -- If a depends on b
 
 getEdgesTo :: (Eq a) => a -> ConnectList a -> [a]
 getEdgesTo x cTo = if isJust $ getEdgesToTuple x cTo then let (Just tup) = getEdgesToTuple x cTo in snd tup else []
