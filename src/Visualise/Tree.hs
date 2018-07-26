@@ -58,7 +58,7 @@ foldThroughRoots queue firstCTo = foldr (\root (accQueue,accList,accCTo) ->
                                   ([],[],firstCTo) queue
 
 -- | Folds through a list of vertices (used by 'foldThroughRoots' for vertices connected to a root).
--- Checks if the current vertex has any other connections other thaan the root. If it doesn't it is added to the sorted list. 
+-- Checks if the current vertex has any other connections other thaan the root. If it doesn't it is added to the queue. 
 -- Regardless of its connections the connection between it and the root is removed from the adjacency list.
 foldThroughConnectedNodes :: (Eq a) => a                     -- ^ The current root from the queue.
                                     -> [a]                   -- ^ The current queue.
@@ -122,7 +122,8 @@ moveToNext x cTo accL accR = or ((\a -> dependsOn x a cTo) <$> accL) || or ((\a 
 reducedConnections :: ConnectList a -> [(a,a)]
 reducedConnections = foldr (\(x,ys) acc -> ((\y -> (x,y)) <$> ys) ++ acc) []
 
-positionInGivenLayer :: (Eq a) => (a) -> [a] -> LayerPosition
+-- | Takes a vertex and a list of vertices (representing a layer) and returns whether the vertex is in the middle or on the left or right.
+positionInGivenLayer :: (Eq a) => a -> [a] -> LayerPosition
 positionInGivenLayer x ys
     | position == midPoint = LayerMiddle
     | position < midPoint = LayerLeft
@@ -132,26 +133,20 @@ positionInGivenLayer x ys
               getElemIndex (Just i) = i
               getElemIndex Nothing = 0
 
+-- | Takes the visualisation settings and a list of layers and produces a diagram.
+-- Folds through the level list and calls 'draw' on each vertex to get its corrisponding diagram. The diagrams in each level are horizontally separated by the amount goverened by the 'Settings' parameter.
+-- The layers themselves are then vertically separated by an amount also specified by the 'Settings' parameter. 
 visualiseLayers :: (Draw a) => Settings -> [[a]] -> Diagram B
--- visualiseLayers :: _
-visualiseLayers s levelled = vsep (fromJust . layerSpacing $ s) $ foldl (\acc level -> center (hsep (fromJust . nodeSpacing $ s) $ 
-                                                                                       -- (draw 0.1 0.1 (drawDAG' (\_ -> s))) <$> level
-                                                                                       draw <$> level
-                                                                                 ) : acc)
-                                                     [] levelled
+visualiseLayers s levelled = vsep (fromJust . layerSpacing $ s) $ foldl (\acc level -> center (hsep (fromJust . nodeSpacing $ s) $ draw <$> level) : acc) [] levelled
 
-connectNodes :: (Show a, Draw a) => Settings -> ArrowOpts Double -> a -> a -> [[a]] -> Maybe LayerPosition -> Diagram B
-connectNodes s arrowOptsF n1 n2 levelled pos = connectOutside' arrowOptsF (show n1) (show n2) $ visualiseLayers s levelled
-
-getArrowPoints :: Maybe LayerPosition -> a -> a -> a -> a
-getArrowPoints posM a b c = if isJust posM 
-                            then let (Just pos) = posM 
-                                 in if pos == LayerLeft then a 
-                                    else if pos == LayerRight then b
-                                         else c 
-                            else c
-
-visualiseTree :: (Show a, Eq a, Draw a) => Settings -> [a] -> [(a,a)] -> ConnectList a -> Diagram B
+-- | The main visualisation function.
+-- Topologically sorts the list of vertices using 'getLevelList' before separating the vertices into layers by using 'levelled'.
+-- A 'Diagram' is then drawn without connections, using 'visualiseLayers', and then the 'rawConnections' list is folded over and the conenctions are added one by one to produce the final diagram (which is then suurrounded by a box).
+visualiseTree :: (Show a, Eq a, Draw a) => Settings        -- ^ A 'Settings' type instance providing the visualisation settings for the graph.
+                                        -> [a]             -- ^ A list of the vertices in the graph -- designed to be of the type 'Node' with a String name and a 'Diagram B' diagram attribute.
+                                        -> [(a,a)]         -- ^ A list of connections, with the first element being the tail and second element being the head (if the graph is 'Directed').
+                                        -> ConnectList a   -- ^ The adjacency list for the graph.
+                                        -> Diagram B       -- ^ The 'Diagram B' of the graph visualised as a tree.
 visualiseTree s nodes rawConnections connectedList = outDiag <> boundingRect outDiag
     where outDiag = (if length rawConnections > 0 then connectedDiagram else visualiseLayers s levelled) # frame (fromJust . graphPadding $ s)
           connectedDiagram = foldr (\(a,b) acc -> connectOutside' arrowOpts1 (show a) (show b) acc) (visualiseLayers s levelled) rawConnections
@@ -159,9 +154,29 @@ visualiseTree s nodes rawConnections connectedList = outDiag <> boundingRect out
           levelled = getLevels topList [] connectedList
           topList = nub $ getLevelList (getRoots nodes connectedList) connectedList
 
+-- | Removes indirect connections from the graph and produces a 'Diagram', using 'drawTreePartialOrder'' with the default drawing 'Settings' provided 'defaultTreeSettings'.
 drawTreePartialOrder :: (Show a, Eq a, Countable a) => Graph a -> Diagram B
 drawTreePartialOrder = drawTreePartialOrder' defaultTreeSettings drawDefaultNode
 
+{-| Removes indirect connections from the graph and draws it using 'visualiseTree', producing a 'Diagram'.
+Provides a parameter to supply a function that takes the graph and returns an instance of the 'Settings' type that will give the drawing functions the graph visualisation settings.
+An example of such a function is the 'defaultTreeSettings' function:
+@
+defaultTreeSettings :: (Countable a) => Graph a -> Settings
+defaultTreeSettings g = Settings (dynamicStyle small $ count g) 
+                                 (dynamicStyle thin $ count g) 
+                                 Directed 
+                                 (Just 0.2) 
+                                 (Just 0.3) 
+                                 (Just 0.1) 
+                                 Nothing 
+                                 Nothing 
+                                 Nothing
+@
+This shows that the arrow head size, arrow shaft thickness, whether the graph is directed, the horizontal and vertical spacing between vertices and the graph frame padding can be customised.
+
+The indirect conenctions are removed by using 'reduction' and the graph is processed by 'getVertices' to produce a 'ProcessedGraph' instance containing the vertices and their connections.
+-}
 drawTreePartialOrder' :: (Show a, Eq a, Countable a) => (Graph a -> Settings) -> (a -> Diagram B) -> Graph a -> Diagram B
 drawTreePartialOrder' settingsF drawF g = visualiseTree s nodes newConnections reduced
     where newConnections = reducedConnections reduced
@@ -169,14 +184,19 @@ drawTreePartialOrder' settingsF drawF g = visualiseTree s nodes newConnections r
           (ProcessedGraph nodes connections) = getVertices drawF g
           s = settingsF g
 
+-- | Draws the provided graph as a tree, producing a 'Diagram' using 'drawTree'', using the default settings.
 drawTree :: (Show a, Eq a, Countable a) => Graph a -> Diagram B
 drawTree = drawTree' defaultTreeSettings drawDefaultNode
 
+-- | Draws the graph provided with 'visualiseTree', using the provided function to produce the visualisation 'Settings'. For more information on customisable settings see 'drawTree''.
+-- Uses 'getVertices' to produce a 'ProcessedGraph' with the graph's verices and conenctions, then uses 'visualiseTree' with these.
 drawTree' :: (Show a, Eq a, Countable a) => (Graph a -> Settings) -> (a -> Diagram B) -> Graph a -> Diagram B
 drawTree' settingsF drawF g = visualiseTree s nodes connections connectedList
     where connectedList = connectedTo connections
           (ProcessedGraph nodes connections) = getVertices drawF g
           s = settingsF g
 
+-- | Generates a default 'Settings' from the provided graph.
+-- The arrow head suze and shaft thickness vary in accordance with the graph size and the graph is 'Directed' with layer separation, vertex (horizonal) separation and frame padding off 0.2, 0.3 and 0.1 respectively. 
 defaultTreeSettings :: (Countable a) => Graph a -> Settings
 defaultTreeSettings g = Settings (dynamicStyle small $ count g) (dynamicStyle thin $ count g) Directed (Just 0.2) (Just 0.3) (Just 0.1) Nothing Nothing Nothing

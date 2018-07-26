@@ -5,7 +5,7 @@
 module Visualise.Hierarchical (
     Settings(..),
 
-    drawHier, drawHier', defaultHierSettings
+    drawHier, drawHier', defaultHierSettings, alternatingColour
 ) where
 
 import Algebra.Graph hiding ((===))
@@ -14,48 +14,57 @@ import Diagrams.Prelude hiding (Empty)
 import Diagrams.Backend.SVG
 import Data.Maybe
 
-drawDefaultHierNode :: String -> Diagram B 
-drawDefaultHierNode n = text n # href ("javascript:alert(\"Node " ++ n ++ "\")") # fontSizeL 0.4 <> circle 0.7 # lwL 0.05 # named n
+-- | The default function to produce a 'Diagram' for a 'Vertex'.
+-- Calls 'show' on the provided value and puts the text in a circle.
+drawDefaultHierNode :: (Show a) => a -> Diagram B 
+drawDefaultHierNode nn = text n # href ("javascript:alert(\"Node " ++ n ++ "\")") # fontSizeL 0.4 <> circle 0.7 # lwL 0.05 # named n
+    where n = show nn
 
-name :: (Show a) => Graph a -> String
-name (Vertex a) = show a
-name (Overlay a b) = name a ++ "_overlay_" ++ name b
-name (Connect a b) = name a ++ "_connect_" ++ name b
-
-visualiseHier :: (Show a) => (String -> Diagram B) -> Graph a -> Int -> Settings -> Diagram B
-visualiseHier drawF g@(Vertex a) l s = (drawF $ name g) # lwL 0.05
-visualiseHier drawF g@(Overlay g1 g2) l s = (drawn <> boundingRect drawn # fc ((fromJust . colF) s l) # lw none # opacity (fromJust . bgOp $ s)) # named (name g)
+-- | Parses the provided graph using recursion and draws each vertex using the provided vertex-drawing function and 'Settings'. 
+-- When 'Overlay' is used the two graphs are drawn next to each other vertically surrounded by a coloured box, where the colour is determined by the 'Settings'. 
+-- For 'Connect' the graphs are drawn next to each other horizontally, surrounded by a box and also connected with an arrow.
+visualiseHier :: (Show a) => (a -> Diagram B)  -- ^ The vertex-drawing function -- takes a vertex and draws it
+                          -> Graph a           -- ^ The Graph to be drawn
+                          -> Int               -- ^ The current depth the recursion is into the graph, function should be called with 0 for this value.
+                          -> Settings          -- ^ The 'Settings' for the visualisation.
+                          -> Diagram B         -- ^ The output 'Diagram' for the graph.
+visualiseHier drawF g@(Vertex a) l s = (drawF $ a) # lwL 0.05
+visualiseHier drawF g@(Overlay g1 g2) l s = (drawn <> boundingRect drawn # fc ((fromJust . colF) s l) # lw none # opacity (fromJust . bgOp $ s)) # named (show g)
     where drawn = (visualiseHier drawF g1 (l + 1) s === strutY 1 === visualiseHier drawF g2 (l + 1) s) # frame 0.2
-visualiseHier drawF g@(Connect g1 g2) l s = (arrowed <> boundingRect arrowed # fc ((fromJust . colF) s l) # lw none # opacity (fromJust . bgOp $ s)) # named (name g)
-    where arrowed = connectOutside' arrowOpts (name g1) (name g2) drawn
+visualiseHier drawF g@(Connect g1 g2) l s = (arrowed <> boundingRect arrowed # fc ((fromJust . colF) s l) # lw none # opacity (fromJust . bgOp $ s)) # named (show g)
+    where arrowed = connectOutside' arrowOpts (show g1) (show g2) drawn
           drawn = (visualiseHier drawF g1 (l + 1) s ||| strutX 1 ||| visualiseHier drawF g2 (l + 1) s) # frame 0.2
           arrowOpts = with & shaftStyle %~ lw (dynamicThick s) & if directed s == Directed then headLength .~ dynamicHead s else arrowHead .~ noHead
 
+-- | The default drawing function which uses 'drawHier'' with the default 'Settings' provided by the function 'defaultHierSettings'. 
+-- The background colour for each layer alternates using the 'alternatingColour' function and have the opacity of '1'.
 drawHier :: (Show a, Countable a) => Graph a -> Diagram B
 drawHier = drawHier' defaultHierSettings drawDefaultHierNode
 
-drawHier' :: (Show a, Countable a) => (Graph a -> Settings) -> (String -> Diagram B) -> Graph a -> Diagram B
+-- | Takes a 'Settings'-producing function, a 'Vertex'-to-'Diagram' function and a 'Graph' to produce a hierarchical representation for the graph in the form of a 'Diagram'.
+drawHier' :: (Show a, Countable a) => (Graph a -> Settings) -> (a -> Diagram B) -> Graph a -> Diagram B
 drawHier' settingsF drawF g = visualiseHier drawF g 0 (settingsF g) # frame 0.1
 
+-- | Produces the default 'Settings' for the supplied 'Graph'. 
+-- The arrow heads and shafts automatically scale to the number of graph vertices, the 'Graph' is 'Directed' and the group background colours alternate using 'alternatingColour' by default with an opacity of 1. 
 defaultHierSettings :: (Countable a) => Graph a -> Settings
-defaultHierSettings g = Settings (dynamicStyle normal entireSize) 
-                             (dynamicStyle thin entireSize) 
-                             Directed 
-                             Nothing 
-                             Nothing 
-                             Nothing 
-                             (Just alternatingColour) 
-                             (Just 1) 
-                             Nothing
-    where entireSize = count g
+defaultHierSettings g = Settings (dynamicStyle normal $ count g)
+                                 (dynamicStyle thin $ count g)
+                                 Directed
+                                 Nothing
+                                 Nothing
+                                 Nothing
+                                 (Just alternatingColour) 
+                                 (Just 1)
+                                 Nothing
 
-alternatingColour :: Int -> Colour Double
+-- | If the current depth is odd the colour is red and if it's even then the colour is cyan.
+alternatingColour :: Int            -- ^ The depth of the current layer of the graph.
+                  -> Colour Double  -- ^ The background colour for the layer.
 alternatingColour i
     | odd i = red
     | otherwise = cyan
 
-
--- main = mainWith $ visualiseHier inputTestData 0 defaultSettings # frame 0.2
 
 -- Test data:
 

@@ -21,7 +21,7 @@ module Visualise.Common (
 ) where
 
 import Algebra.Graph
-import Diagrams.Prelude hiding (Empty, union, size)
+import Diagrams.Prelude hiding (Empty, union)
 import Diagrams.Backend.SVG
 import Data.List
 import Data.Either
@@ -169,8 +169,19 @@ namesAndConnections drawF (Connect a b) c = ProcessedGraph (nA `union` nB) ([(aA
           (ProcessedGraph nB cB) = namesAndConnections drawF b ('r' : c)
 
 -- | Takes a list of connections and produces a corrisponding adjacency list (so tuples of a vertex and a list of vertices dependant on it) by using folds and recursion.
-connectedFrom :: (Eq a) => [(a,a)]          -- ^ A list of tuples where the first tuple element and second tuple element are used to corrispond to the 'Vertex' at the tail of the conenction and at the head of connection respectively.
-                        -> ConnectList a    -- ^ The corrisponding adjacency list to the list of the connections.
+connectedTo :: (Eq a) => [(a,a)]        -- ^ A list of tuples where the first tuple element and second tuple element are used to corrispond to the 'Vertex' at the tail of the conenction and at the head of connection respectively.
+                      -> ConnectList a  -- ^ The corrisponding adjacency list to the list of the connections.
+connectedTo [] = []
+connectedTo [(a,b),(x,y)]
+  | a == x = [(a,[b,y])]
+  | otherwise = (a,[b]) : [(x,[y])]
+connectedTo l@((x,y):zs) = (x,outgoing) : if not (null remaining) then connectedTo remaining else []
+    where remaining = zs \\ filtered
+          outgoing = foldr (\(a,b) acc -> b : acc) [] filtered
+          filtered = filter (\(a,b) -> a == x) l
+
+-- | Similar to 'connectedTo', takes a list of connections and produces a 'ConnectList' containing the vertices that each vertex depends on.
+connectedFrom :: (Eq a) => [(a,a)] -> ConnectList a
 connectedFrom [] = []
 connectedFrom [(a,b),(x,y)]
   | b == y = [(b,[a,x])]
@@ -180,16 +191,7 @@ connectedFrom l@((x,y):zs) = (y,incoming) : if not (null remaining) then connect
           incoming = foldr (\(a,b) acc -> a : acc) [] filtered
           filtered = filter (\(a,b) -> b == y) l
 
--- | Similar to 'connectedFrom', takes a list of connections and produces a 'ConnectList' containing the nodes that each vertex depends on.
-connectedTo :: (Eq a) => [(a,a)] -> ConnectList a
-connectedTo [] = []
-connectedTo [(a,b),(x,y)]
-  | a == x = [(a,[b,y])]
-  | otherwise = (a,[b]) : [(x,[y])]
-connectedTo l@((x,y):zs) = (x,outgoing) : if not (null remaining) then connectedTo remaining else []
-    where remaining = zs \\ filtered
-          outgoing = foldr (\(a,b) acc -> b : acc) [] filtered
-          filtered = filter (\(a,b) -> a == x) l
+
 
 -- | Used to produce a measurement for the size of 'Diagram' properties from a default measurement and the size of a graph as an 'Integer'.
 -- Multiplies the default value by 10 and divides this new value by the size of the graph.

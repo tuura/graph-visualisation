@@ -11,7 +11,7 @@ module Visualise.FlatAdaptive (
 
 import Visualise.Common
 import Algebra.Graph
-import Diagrams.Prelude hiding (Empty)
+import Diagrams.Prelude hiding (Empty, union)
 import Diagrams.Backend.SVG.CmdLine
 import Diagrams.Path
 import Data.Char
@@ -19,33 +19,31 @@ import Data.List
 import Data.Function
 import Data.Maybe
 
-layoutPoly :: (V t ~ V2, TrailLike t) => Int -> t
-layoutPoly n = regPoly n 0.5
-
+-- | Produces a regular polygon of the specified number of sides and gets the points coorrisponding to the polygon's vertices.
 layoutVertices :: Int -> [Point V2 Double]
 layoutVertices n = trailVertices $ regPoly n 1
 
+-- | Gets all the connections to each node, regardless of direction.
+-- Combines the 'ConnectList's from 'connectedTo' and 'connectedFrom' and groups them using 'groupConnected' to give a 'ConnectList' where the second tuple elements are all the incoming and outgoing conenctions for the vertex in the first element of the tuple.
 connected :: (Show a, Eq a, Ord a) => [a] -> [(a,a)] -> ConnectList a
 connected n l = groupConnected $ sortBy (\(x,_) (y,_) -> x `compare` y) (connectedTo l ++ connectedFrom l)
 
+-- | Groups together elements in the provided 'ConnectList' to stop more than one tuple element with the same first element.
+-- Results in a maximum of one tuple element per vertex, with the second tuple element containing the union of tuple elements with the same first element in the original list.
 groupConnected :: (Eq a) => ConnectList a -> ConnectList a
 groupConnected [] = []
 groupConnected [(a,bs),(c,ds)]
-    | a == c = [(a,bs++ds)]
-    | otherwise = (a,bs):[(c,ds)]
-groupConnected ((a,bs):(c,ds):es)
-    | a == c = groupConnected ((a,nub $ bs++ds):es)
-    | otherwise = (a,bs):groupConnected((c,ds):es)
+    | a == c = [(a,bs `union` ds)]
+    | otherwise = (a,bs) : [(c,ds)]
+groupConnected ((a,bs) : (c,ds) : es)
+    | a == c = groupConnected ((a,bs `union` ds) : es)
+    | otherwise = (a,bs) : groupConnected((c,ds) : es)
 
-smallConn :: (Show a, Eq a) => ConnectList a -> a -> Maybe (a,[a])
-smallConn l n = find (\(x,y) -> x == n) l
-
-oneConn :: (Show a, Eq a) => ConnectList a -> a -> Maybe (a,[a])
-oneConn l n = find (\(x,y) -> x == n && length y == 1) l
-
+-- | Sorts the provided 'ConnectList' by the length of the second tuple element lists.
 getGroups :: ConnectList a -> ConnectList a
 getGroups = sortBy (compare `on` length . snd)
 
+-- | TODO: Carry on Haddock here
 layoutGroups :: (Show a, Eq a) => Diagram B -> [a] -> ConnectList a -> Diagram B
 layoutGroups d n [] = mempty
 layoutGroups d n ((a,bs):xs)

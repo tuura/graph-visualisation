@@ -3,7 +3,9 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE FlexibleContexts #-}
 
-module Visualise.GraphViz () where
+module Visualise.GraphViz (
+    drawWithGraphViz
+) where
 
 import Visualise.Common hiding (Draw,draw)
 import Visualise.Tree
@@ -15,17 +17,23 @@ import Data.GraphViz
 import Algebra.Graph
 import Data.Graph.Inductive.PatriciaTree (Gr)
 
--- main = mainWith $ theGraph >>= drawGraph
-  -- where --theGraph :: IO (Diagram B)
-
--- main = mainWith ex1
-
 class Draw a where
     draw :: Directed -> a -> Diagram B
 
-instance (Show a, Draw a) => Draw (Graph a) where
-    draw dir g = drawTree' (\gr -> Settings (dynamicStyle small $ count gr) (dynamicStyle thin $ count gr) dir (Just 0.2) (Just 10) (Just 5) Nothing Nothing Nothing) drawGVNode $ show <$> g
-
+-- | Defines how graphs of graphs can be drawn
+instance (Show a, Draw a, Eq a, Countable a) => Draw (Graph a) where
+    -- | Uses the "Visualise.Tree" module (with the specified settings) to draw each vertex that contains a graph.
+    draw dir g = drawTree' (\gr -> Settings (dynamicStyle small $ count gr) 
+                                            (dynamicStyle thin $ count gr) 
+                                            dir 
+                                            (Just 0.2) 
+                                            (Just 10) 
+                                            (Just 5) 
+                                            Nothing 
+                                            Nothing
+                                            Nothing
+                            ) (draw dir) g
+-- | TODO: Carry on Haddock here
 instance Draw String where
     draw _ = drawGVNode
 
@@ -35,10 +43,16 @@ instance Draw Int where
 instance (Ord a, Show a) => Ord (Graph a) where
     a `compare` b = show a `compare` show b
 
+-- | The default vertex-drawing function for graphs of the type 'String'
 drawGVNode :: String -> Diagram B
 drawGVNode n = circle 19 <> text n # fontSizeL 20
 
-drawWithGraphViz :: (Ord a, Draw a) => GraphvizCommand -> Directed -> Graph a -> IO (Diagram B)
+-- | Uses "Diagrams.TwoD.GraphViz" as an interface to the "Data.GraphViz" library to produce a "Diagrams" representation of the provided graph using the provided "GraphvizCommand".
+-- The resultant 'Diagram' is wrapped in an 'IO' from "System.IO" so must be bound to a function such as 'saveSVG' to write it to a file.
+drawWithGraphViz :: (Ord a, Draw a) => GraphvizCommand  -- ^ The way that "Data.GraphViz" should draw the graph, see "Data.GraphViz.Commands".
+                                    -> Directed         -- ^ Whether the graph is 'Directed'.
+                                    -> Graph a          -- ^ The graph that should be drawn.
+                                    -> IO (Diagram B)   -- ^ The resultant graph drawing in an 'IO' wrapper.
 drawWithGraphViz cmd innerDir graph = do
     let g = gen graph
     layedOut <- layoutGraph cmd g
@@ -46,6 +60,7 @@ drawWithGraphViz cmd innerDir graph = do
         arrowOpts p = with & gaps .~ local 24 & headLength .~ local 12 & arrowShaft .~ (unLoc . head . pathTrails $ p)
     return (drawing # frame 20)
 
+-- | Converts a 'Graph' of the type defined by "Algebra.Graph" into a list of vertices and edges to fit "Data.Graph.Inductive.PatriciaTree".
 gen :: (Ord a) => Graph a -> Gr a ()
 gen g = mkGraph (vertexList g) $ (\(a,b) -> (a,b,())) <$> (edgeList $ g) 
 

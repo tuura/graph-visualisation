@@ -13,6 +13,7 @@ import Visualise.GraphViz
 import Algebra.Graph
 import Diagrams.Prelude
 import Diagrams.Backend.SVG
+import Data.GraphViz.Commands
 
 -- | The graph drawing method
 data Method = Tree  -- ^ The 'drawTree' function from "Visualise.Tree" module will be used to draw the graph
@@ -29,7 +30,7 @@ drawGraph :: (Show a, Eq a, Countable a) => Method -> Graph a -> Diagram B
 drawGraph Tree = drawTree
 drawGraph TreePartialOrder = drawTreePartialOrder
 drawGraph Circle = drawFlatCircle
--- drawGraph Hierarchical = drawHier
+drawGraph Hierarchical = drawHier
 drawGraph Adaptive = drawFlatAdaptive
 
 -- | Draw a graph using the specified method, but also using the specified settings (provided as a function that will take a graph and return a 'Settings' instance, see "Visualise")
@@ -37,7 +38,7 @@ drawGraph' :: (Show a, Eq a, Countable a) => Method -> (Graph a -> Settings) -> 
 drawGraph' Tree = drawTree'
 drawGraph' TreePartialOrder = drawTreePartialOrder'
 drawGraph' Circle = drawFlatCircle'
--- drawGraph' Hierarchical = drawHier'
+drawGraph' Hierarchical = drawHier'
 drawGraph' Adaptive = drawFlatAdaptive'
 
 -- | Saves a diagram to an SVG file at the specified 'FilePath', with the specified 'Dimensions'. Only one dimension is needed, they are given in the format:
