@@ -34,33 +34,47 @@ reduction ((x,ys):zs) extras = new : reduction zs (new : extras)
 
 -- | Finds the vertices that don't depend on any other vertices - i.e. the roots of the graph.
 -- Folds through the graph's adjacency list and deletes 
--- TODO: Fix confusion between connectedTo and connectedFrom
 getRoots :: (Eq a) => [a] -> ConnectList a -> [a]
 getRoots = foldr (\(x,ys) acc -> delete x acc)
 
 -- | Topological sorting of a graph represented by a list of vertices and a 'ConnectList' of vertex connections.
 -- It sorts the graph by using Kahn's algorithm, producing an ordered list of vertices.
-getLevelList :: (Eq a) => [a] -> ConnectList a -> [a]
+getLevelList :: (Eq a) => [a]            -- ^ The initial list of vertices that roots in the graph
+                       -> ConnectList a  -- ^ The adjacency list for the graph
+                       -> [a]            -- ^ The topologically ordered list, or partial list as 'getLevelList' is recursive.
 getLevelList [] _ = []
 getLevelList q firstCTo = let (queue,list,cTo) = foldThroughRoots q firstCTo
                           in list ++ getLevelList queue cTo
           
-foldThroughRoots :: (Eq a) => [a] -> ConnectList a -> ([a], [a], ConnectList a)
+-- | Folds through the current list of roots (vertices with no incoming conenctions) and folds through each root's connections to generate part of the sorted list.
+-- Adds the current root to the sorted list, then folds over its nodes using 'foldThroughConnectedNodes' and adds any nodes which no longer have other connections to the list.
+foldThroughRoots :: (Eq a) => [a]                        -- ^ The current queue/roots.
+                           -> ConnectList a              -- ^ The current adjacency list -- modified by previous executions of 'foldThroughRoots' to update the removed connections.
+                           -> ([a], [a], ConnectList a)  -- ^ The first element is the new queue/new roots, the second element is the updated sorted list and the third element is the new adjacency list.
 foldThroughRoots queue firstCTo = foldr (\root (accQueue,accList,accCTo) -> 
-                                    let newList = (root : accList) -- Prepend the current root node to the list
-                                        folded = foldThroughConnectedNodes root accQueue accCTo -- Fold over the nodes connected to the root node
-                                    in (fst folded, newList, snd folded)) -- Add the nodes which have no other connections currently to the list
-                                  ([],[],firstCTo) queue -- Start by folding over the root nodes with no incoming connections
+                                    let newList = (root : accList)
+                                        folded = foldThroughConnectedNodes root accQueue accCTo
+                                    in (fst folded, newList, snd folded))
+                                  ([],[],firstCTo) queue
 
-
-foldThroughConnectedNodes :: (Eq a) => a -> [a] -> ConnectList a -> ([a], ConnectList a)
+-- | Folds through a list of vertices (used by 'foldThroughRoots' for vertices connected to a root).
+-- Checks if the current vertex has any other connections other than the root. If it doesn't it is added to the sorted list. 
+-- Regardless of its connections the connection between it and the root is removed from the adjacency list.
+foldThroughConnectedNodes :: (Eq a) => a                     -- ^ The current root from the queue.
+                                    -> [a]                   -- ^ The current queue.
+                                    -> ConnectList a         -- ^ The current adjacency list.
+                                    -> ([a], ConnectList a)  -- ^ The first element is the new queue and the second element is the updated adjacency list.
 foldThroughConnectedNodes root queue cTo = foldr (\b (accQueue,acc2) -> -- b is the current node connected to root Node, acc1 is the current list, acc2 is the current adjacency list
                                               if length (getEdgesTo b acc2) <= 1 then (accQueue ++ [b], deleteConnection root b acc2) -- If the node b has no more incoming edges it is added to the list and removed from the adjacency list
                                               else (accQueue, deleteConnection root b acc2)) -- Otherwise the list remains the same but it is still removed from the adjacency list
                                               (queue,cTo) (getEdgesFrom root cTo)
 
+-- | Removes a connection that goes from 'x' to 'r' in the given adjacency list
+-- deleteConnection :: (Eq a) => a -> a -> ConnectList a -> ConnectList a
+-- deleteConnection x r cTo = (\(a,bs) -> (a,delete x bs)) <$> cTo
+
 deleteConnection :: (Eq a) => a -> a -> ConnectList a -> ConnectList a
-deleteConnection x r cTo = (\(a,bs) -> (a,delete x bs)) <$> cTo
+deleteConnection x r cTo = (\(a,bs) -> if a == r then (a,delete x bs) else (a,bs)) <$> cTo
 
 dependsOn :: (Eq a) => a -> a -> ConnectList a -> Bool
 dependsOn a b cTo = b `elem` getEdgesTo a cTo -- If a depends on b
@@ -142,8 +156,10 @@ visualiseTree s nodes rawConnections connectedList = outDiag <> boundingRect out
     -- where connectedDiagram = map (\(a,b) -> (if abs (layerDiff a b levelled) > 1 
     --                                          then connectNodes (arrowOpts1 & (arrowOpts2 a b)) a b levelled $ Just (elemPosition a levelled) 
     --                                          else connectNodes arrowOpts1 a b levelled Nothing)) rawConnections
-    where outDiag = (if length rawConnections > 0 then mconcat connectedDiagram else visualiseLayers s levelled) # frame (fromJust . graphPadding $ s)
-          connectedDiagram = map (\(a,b) -> connectNodes s arrowOpts1 a b levelled Nothing) rawConnections
+    where outDiag = (if length rawConnections > 0 then connectedDiagram else visualiseLayers s levelled) # frame (fromJust . graphPadding $ s)
+    -- where outDiag = (if length rawConnections > 0 then mconcat connectedDiagram else visualiseLayers s levelled) # frame (fromJust . graphPadding $ s)
+          -- connectedDiagram = map (\(a,b) -> connectNodes s arrowOpts1 a b levelled Nothing) rawConnections
+          connectedDiagram = foldr (\(a,b) acc -> connectOutside' arrowOpts1 (show a) (show b) acc) (visualiseLayers s levelled) rawConnections
           arrowOpts1 = with & shaftStyle %~ lw (dynamicThick s) & if directed s == Directed then headLength .~ dynamicHead s else arrowHead .~ noHead
           arrowOpts2 a b = let posA = elemPosition a levelled 
                                posB = elemPosition b levelled
