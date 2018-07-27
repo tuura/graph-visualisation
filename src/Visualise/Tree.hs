@@ -6,7 +6,7 @@
 {-# LANGUAGE FlexibleInstances #-}
 
 module Visualise.Tree (
-    drawTree, drawTree', drawTreePartialOrder, drawTreePartialOrder'
+    drawTree, drawTree', drawTreePartialOrder, drawTreePartialOrder', defaultTreeSettings, defaultTreeSettingsHorizontal
 ) where
 
 import Visualise.Common
@@ -137,7 +137,9 @@ positionInGivenLayer x ys
 -- Folds through the level list and calls 'draw' on each vertex to get its corrisponding diagram. The diagrams in each level are horizontally separated by the amount goverened by the 'Settings' parameter.
 -- The layers themselves are then vertically separated by an amount also specified by the 'Settings' parameter. 
 visualiseLayers :: (Draw a) => Settings -> [[a]] -> Diagram B
-visualiseLayers s levelled = vsep (fromJust . layerSpacing $ s) $ foldl (\acc level -> center (hsep (fromJust . nodeSpacing $ s) $ draw <$> level) : acc) [] levelled
+visualiseLayers s levelled = betLayerSepF (fromJust . layerSpacing $ s) $ foldl (\acc level -> center (inLayerSepF (fromJust . nodeSpacing $ s) $ draw <$> level) : acc) [] levelled
+    where inLayerSepF = if fromJust . horizontalOrientation $ s then vsep else hsep
+          betLayerSepF = if fromJust . horizontalOrientation $ s then hsep else vsep
 
 -- | The main visualisation function.
 -- Topologically sorts the list of vertices using 'getLevelList' before separating the vertices into layers by using 'levelled'.
@@ -181,6 +183,7 @@ defaultTreeSettings :: (Countable a) => Graph a -> Settings
 defaultTreeSettings g = Settings (dynamicStyle small $ count g) 
                                  (dynamicStyle thin $ count g) 
                                  Directed 
+                                 False
                                  (Just 0.2) 
                                  (Just 0.3) 
                                  (Just 0.1) 
@@ -188,7 +191,7 @@ defaultTreeSettings g = Settings (dynamicStyle small $ count g)
                                  Nothing 
                                  Nothing
 @
-This shows that the arrow head size, arrow shaft thickness, whether the graph is directed, the horizontal and vertical spacing between vertices and the graph frame padding can be customised.
+This shows that the arrow head size, arrow shaft thickness, whether the graph is directed, whether the graph is horizontally orientated, the horizontal and vertical spacing between vertices and the graph frame padding can be customised.
 
 The indirect conenctions are removed by using 'reduction' and the graph is processed by 'getVertices' to produce a 'ProcessedGraph' instance containing the vertices and their connections.
 Self-loops are not supported.
@@ -213,14 +216,29 @@ drawTree' settingsF drawF g = visualiseTree s nodes connections connectedList
           s = settingsF g
 
 -- | Generates a default 'Settings' from the provided graph.
--- The arrow head suze and shaft thickness vary in accordance with the graph size and the graph is 'Directed' with layer separation, vertex (horizonal) separation and frame padding off 0.2, 0.3 and 0.1 respectively. 
+-- The arrow head suze and shaft thickness vary in accordance with the graph size and the graph is 'Directed'and vertically orientated with layer separation, vertex (horizonal) separation and frame padding of 0.2, 0.3 and 0.1 respectively. 
 defaultTreeSettings :: (Countable a) => Graph a -> Settings
-defaultTreeSettings g = Settings (dynamicStyle small $ count g) 
-                                 (dynamicStyle thin $ count g) 
-                                 Directed 
-                                 (Just 0.2) 
-                                 (Just 0.3) 
-                                 (Just 0.1) 
-                                 Nothing 
-                                 Nothing 
+defaultTreeSettings g = Settings (dynamicStyle small $ count g)
+                                 (dynamicStyle thin $ count g)
+                                 Directed
+                                 (Just False)
+                                 (Just 0.2)
+                                 (Just 0.3)
+                                 (Just 0.1)
+                                 Nothing
+                                 Nothing
+                                 Nothing
+
+-- | Generates a default 'Settings' from the provided graph, but rotated so the graph is horizonal instead of vertical.
+-- The arrow head suze and shaft thickness vary in accordance with the graph size and the graph is 'Directed' and horizontally orientated with layer separation, vertex (horizonal) separation and frame padding of 0.2, 0.3 and 0.1 respectively. 
+defaultTreeSettingsHorizontal :: (Countable a) => Graph a -> Settings
+defaultTreeSettingsHorizontal g = Settings (dynamicStyle small $ count g)
+                                 (dynamicStyle thin $ count g)
+                                 Directed
+                                 (Just True)
+                                 (Just 0.2)
+                                 (Just 0.3)
+                                 (Just 0.1)
+                                 Nothing
+                                 Nothing
                                  Nothing
