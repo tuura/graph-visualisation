@@ -11,7 +11,7 @@ module Visualise.Tree (
 
 import Visualise.Common
 import Algebra.Graph
-import Diagrams.Prelude hiding (Empty)
+import Diagrams.Prelude hiding (Empty, union)
 import Diagrams.Backend.SVG
 import Diagrams.Path
 import Data.List
@@ -147,14 +147,29 @@ visualiseTree :: (Show a, Eq a, Draw a) => Settings        -- ^ A 'Settings' typ
                                         -> [(a,a)]         -- ^ A list of connections, with the first element being the tail and second element being the head (if the graph is 'Directed').
                                         -> ConnectList a   -- ^ The adjacency list for the graph.
                                         -> Diagram B       -- ^ The 'Diagram B' of the graph visualised as a tree.
-visualiseTree s nodes rawConnections connectedList = outDiag <> boundingRect outDiag
+visualiseTree s nodes rawConnections connectedListWithSelfLoops = outDiag <> boundingRect outDiag
     where outDiag = (if length rawConnections > 0 then connectedDiagram else visualiseLayers s levelled) # frame (fromJust . graphPadding $ s)
-          connectedDiagram = foldr (\(a,b) acc -> connectOutside' arrowOpts1 (show a) (show b) acc) (visualiseLayers s levelled) rawConnections
-          arrowOpts1 = with & shaftStyle %~ lw (dynamicThick s) & if directed s == Directed then headLength .~ dynamicHead s else arrowHead .~ noHead
+          -- connectedDiagram = foldr (\(a,b) acc -> connectOutside' arrowOpts1 (show a) (show b) acc) (visualiseLayers s levelled) rawConnections
+          connectedDiagram = foldr (\(a,b) acc -> connectVertices s (show a) (show b) acc) (visualiseLayers s levelled) rawConnections
           levelled = getLevels topList [] connectedList
           topList = nub $ getLevelList (getRoots nodes connectedList) connectedList
+          connectedList = removeSelfLoops connectedListWithSelfLoops
 
--- | Removes indirect connections from the graph and produces a 'Diagram', using 'drawTreePartialOrder'' with the default drawing 'Settings' provided 'defaultTreeSettings'.
+-- | Removes self-loops from the given 'ConnectList' to aid graph layout.
+removeSelfLoops :: (Eq a) => ConnectList a -> ConnectList a
+removeSelfLoops = map (\(a,b) -> (a,delete a b))
+
+-- | Connects two vertices with an arrow.
+-- If the two vertex names are the same a self-loop is drawn, otherwise an arrow between the two nodes is drawn using the 'Settings' provided.
+connectVertices :: Settings -> String -> String -> Diagram B -> Diagram B
+connectVertices s a b d
+    | a == b = connectPerim' arrowOpts2 a b (0 @@ turn) (-1/2 @@ turn) d
+    | otherwise = connectOutside' arrowOpts1 a b d
+        where arrowOpts1 = with & shaftStyle %~ lw (dynamicThick s) & if directed s == Directed then headLength .~ dynamicHead s else arrowHead .~ noHead
+              arrowOpts2 = with & shaftStyle %~ lw (dynamicThick s) & arrowShaft .~ arc xDir (4/6 @@ turn) & if directed s == Directed then headLength .~ dynamicHead s else arrowHead .~ noHead
+
+-- | Removes indirect connections from the graph and produces a 'Diagram', using 'drawTreePartialOrder'' with the default drawing 'Settings' provided 'defaultTreeSettings'. 
+-- Self-loops are not supported.
 drawTreePartialOrder :: (Show a, Eq a, Countable a) => Graph a -> Diagram B
 drawTreePartialOrder = drawTreePartialOrder' defaultTreeSettings drawDefaultNode
 
@@ -176,6 +191,7 @@ defaultTreeSettings g = Settings (dynamicStyle small $ count g)
 This shows that the arrow head size, arrow shaft thickness, whether the graph is directed, the horizontal and vertical spacing between vertices and the graph frame padding can be customised.
 
 The indirect conenctions are removed by using 'reduction' and the graph is processed by 'getVertices' to produce a 'ProcessedGraph' instance containing the vertices and their connections.
+Self-loops are not supported.
 -}
 drawTreePartialOrder' :: (Show a, Eq a, Countable a) => (Graph a -> Settings) -> (a -> Diagram B) -> Graph a -> Diagram B
 drawTreePartialOrder' settingsF drawF g = visualiseTree s nodes newConnections reduced
@@ -184,12 +200,12 @@ drawTreePartialOrder' settingsF drawF g = visualiseTree s nodes newConnections r
           (ProcessedGraph nodes connections) = getVertices drawF g
           s = settingsF g
 
--- | Draws the provided graph as a tree, producing a 'Diagram' using 'drawTree'', using the default settings.
+-- | Draws the provided graph as a tree, producing a 'Diagram' using 'drawTree'', using the default settings. Self-loops are supported.
 drawTree :: (Show a, Eq a, Countable a) => Graph a -> Diagram B
 drawTree = drawTree' defaultTreeSettings drawDefaultNode
 
 -- | Draws the graph provided with 'visualiseTree', using the provided function to produce the visualisation 'Settings'. For more information on customisable settings see 'drawTree''.
--- Uses 'getVertices' to produce a 'ProcessedGraph' with the graph's verices and conenctions, then uses 'visualiseTree' with these.
+-- Uses 'getVertices' to produce a 'ProcessedGraph' with the graph's verices and conenctions, then uses 'visualiseTree' with these, self-loops are supported.
 drawTree' :: (Show a, Eq a, Countable a) => (Graph a -> Settings) -> (a -> Diagram B) -> Graph a -> Diagram B
 drawTree' settingsF drawF g = visualiseTree s nodes connections connectedList
     where connectedList = connectedTo connections
