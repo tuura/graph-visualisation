@@ -199,4 +199,12 @@ drawTree' settingsF drawF g = visualiseTree s nodes connections connectedList
 -- | Generates a default 'Settings' from the provided graph.
 -- The arrow head suze and shaft thickness vary in accordance with the graph size and the graph is 'Directed' with layer separation, vertex (horizonal) separation and frame padding off 0.2, 0.3 and 0.1 respectively. 
 defaultTreeSettings :: (Countable a) => Graph a -> Settings
-defaultTreeSettings g = Settings (dynamicStyle small $ count g) (dynamicStyle thin $ count g) Directed (Just 0.2) (Just 0.3) (Just 0.1) Nothing Nothing Nothing
+defaultTreeSettings g = Settings (dynamicStyle small $ count g) 
+                                 (dynamicStyle thin $ count g) 
+                                 Directed 
+                                 (Just 0.2) 
+                                 (Just 0.3) 
+                                 (Just 0.1) 
+                                 Nothing 
+                                 Nothing 
+                                 Nothing

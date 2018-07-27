@@ -17,7 +17,9 @@ import Data.GraphViz
 import Algebra.Graph
 import Data.Graph.Inductive.PatriciaTree (Gr)
 
+-- | Used to determine how to draw a vertex, different to "Visualise.Common.Draw".
 class Draw a where
+    -- | Draws a vertex as a Diagram from the vertex contents and if the graph is a graph of graphs, whether the graph contained should be directed.
     draw :: Directed -> a -> Diagram B
 
 -- | Defines how graphs of graphs can be drawn
@@ -33,14 +35,19 @@ instance (Show a, Draw a, Eq a, Countable a) => Draw (Graph a) where
                                             Nothing
                                             Nothing
                             ) (draw dir) g
--- | TODO: Carry on Haddock here
+-- | Defines how to draw a vertex that has the type of 'String'.
 instance Draw String where
+    -- | Uses the 'drawGVNode' to draw the vertex, ignoring the 'Directed' parameter.
     draw _ = drawGVNode
 
+-- | Defines how to draw a vertex that has the type of 'Int'.
 instance Draw Int where
+    -- | Turns the value into a 'String' with 'show' and uses 'drawGVNode' to draw the vertex, ignoring the 'Directed' parameter.
     draw _ = drawGVNode . show
 
+-- | Defines how to compare graphs.
 instance (Ord a, Show a) => Ord (Graph a) where
+    -- | Simply calls 'show' on the two graphs and compares the resultant 'String's.
     a `compare` b = show a `compare` show b
 
 -- | The default vertex-drawing function for graphs of the type 'String'
@@ -49,6 +56,7 @@ drawGVNode n = circle 19 <> text n # fontSizeL 20
 
 -- | Uses "Diagrams.TwoD.GraphViz" as an interface to the "Data.GraphViz" library to produce a "Diagrams" representation of the provided graph using the provided "GraphvizCommand".
 -- The resultant 'Diagram' is wrapped in an 'IO' from "System.IO" so must be bound to a function such as 'saveSVG' to write it to a file.
+-- Uses the arrow paths produced by "GraphViz" but uses the custom functon 'draw' to choose how to draw nodes. To draw graphs of graphs the "Visualise.Tree" module is used for the subgraph layouts.
 drawWithGraphViz :: (Ord a, Draw a) => GraphvizCommand  -- ^ The way that "Data.GraphViz" should draw the graph, see "Data.GraphViz.Commands".
                                     -> Directed         -- ^ Whether the graph is 'Directed'.
                                     -> Graph a          -- ^ The graph that should be drawn.

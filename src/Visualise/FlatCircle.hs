@@ -25,7 +25,7 @@ layoutPoly n = regPoly n 1
 drawFlatCircle :: (Show a, Eq a, Countable a) => Graph a -> Diagram B
 drawFlatCircle = drawFlatCircle' defaultFlatCircleSettings drawDefaultNode
 
--- | 
+-- | Draws the provided graph with each graph vertex at a vertex of a regular polygon with the same number of sides 
 drawFlatCircle' :: (Show a, Eq a, Countable a) => (Graph a -> Settings) -> (a -> Diagram B) -> Graph a -> Diagram B
 drawFlatCircle' settingsF drawF g = connected # frame 0.1
     where connected = foldr (\(a,b) acc -> connectOutside' arrowOpts (name a) (name b) acc) noConnDiag connections
@@ -38,7 +38,7 @@ drawFlatCircle' settingsF drawF g = connected # frame 0.1
 
 -- | The default 'Settings' function for this drawing method. By default arrow heads and shafts adapt to the graph size and the graph is 'Directed'.
 defaultFlatCircleSettings :: (Countable a) => Graph a -> Settings
-defaultFlatCircleSettings g = Settings (dynamicStyle normal $ count g) 
+defaultFlatCircleSettings g = Settings (dynamicStyle normal $ count g)
                              (dynamicStyle thin $ count g)
                              Directed
                              Nothing
