@@ -15,7 +15,7 @@ module Visualise.Common (
 
     draw, count,
 
-    drawDefaultNode, drawNodeWithEmptyFlag,
+    drawDefaultNode, drawDefaultNodeWithSize, drawDefaultEmptyNode, drawNodeWithEmptyFlag,
 
     getVertices, connectedFrom, connectedTo, dynamicStyle
 ) where
@@ -128,11 +128,19 @@ instance Ord Node where
     -- | To compare the ordering of two nodes, their Diagram elements are ignored and their String 'name's are compared.
     a `compare` b = show a `compare` show b
 
--- | The default drawing function to produce a single node, in the form of a 'Diagram B', containing some showable text.
--- Also makes the node a link, so if the drawn graph is saved as an SVG file each vertex is clickable with a JavaScript alert giving the vertex's name.
+-- | Produces a default node á la 'drawDefaultNodeWithSize' with a size of '0.1'.
 drawDefaultNode :: (Show a) => a -> Diagram B
-drawDefaultNode nn = (text n # fontSizeL 0.1 <> circle 0.1) # href ("javascript:alert(\"Node " ++ n ++ "\")")
+drawDefaultNode n = drawDefaultNodeWithSize 0.1 n
+
+-- | The default drawing function to produce a single node but of the specified size, in the form of a 'Diagram B', containing some showable text.
+-- Also makes the node a link, so if the drawn graph is saved as an SVG file each vertex is clickable with a JavaScript alert giving the vertex's name.
+drawDefaultNodeWithSize :: (Show a) => Double -> a -> Diagram B
+drawDefaultNodeWithSize s nn = (text n # fontSizeL s <> drawDefaultEmptyNode s) # href ("javascript:alert(\"Node " ++ n ++ "\")")
     where n = show nn
+
+-- | The default circle 'Diagram' for an empty node of the size provided.
+drawDefaultEmptyNode :: Double -> Diagram B
+drawDefaultEmptyNode = circle
 
 -- | The same as 'drawDefaultNode' but instead takes a tuple of a showable value and a boolean flag. 
 -- If the flag is True then it means the vertex should be displayed as an empty vertex with no contents, but if the flag is true the vertex is drawn as normal.
@@ -146,7 +154,7 @@ drawNodeWithEmptyFlag (n,f) = let txt = if f then "" else show n
 getNode :: (Show a) => (a -> Diagram B) -> Either String a -> Node
 getNode drawF x
     | isRight x = Node (show . head . rights $ [x]) ((drawF . head . rights $ [x]) # named (show . head . rights $ [x]))
-    | otherwise = Node (fromLeft "" x) ((drawDefaultNode "") # named (fromLeft "" x))
+    | otherwise = Node (fromLeft "" x) (drawDefaultEmptyNode 0.1 # named (fromLeft "" x))
 
 -- | Essentially a wrapper for the recursive 'namesAndConnections' function. Takes a Diagram-producing function and a Graph of the same type the Diagram function takes and then produces a 'ProcessedGraph' containign all the vertices (their names and diagrams) and connections of the original graph.
 getVertices :: (Eq a, Show a) => (a -> Diagram B)   -- ^ A function that takes a vertex of the 'Graph' of type 'a' and produces a 'Diagram' from it.
@@ -190,8 +198,6 @@ connectedFrom l@((x,y):zs) = (y,incoming) : if not (null remaining) then connect
     where remaining = zs \\ filtered
           incoming = foldr (\(a,b) acc -> a : acc) [] filtered
           filtered = filter (\(a,b) -> b == y) l
-
-
 
 -- | Used to produce a measurement for the size of 'Diagram' properties from a default measurement and the size of a graph as an 'Integer'.
 -- Multiplies the default value by 10 and divides this new value by the size of the graph.
