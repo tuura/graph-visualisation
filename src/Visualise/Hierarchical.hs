@@ -57,11 +57,11 @@ visualiseHier drawF g@(Connect g1 g2) l s = (arrowed <> boundingRect arrowed # f
 -- | The default drawing function which uses 'drawHier'' with the default 'Settings' provided by the function 'defaultHierSettings'. 
 -- The background colour for each layer alternates using the 'alternatingColour' function and have the opacity of '1'.
 drawHier :: (Show a, Countable a) => Graph a -> Diagram B
-drawHier = drawHier' defaultHierSettings drawDefaultHierNode
+drawHier g = drawHier' (defaultHierSettings g) drawDefaultHierNode g
 
--- | Takes a 'Settings'-producing function, a 'Vertex'-to-'Diagram' function and a 'Graph' to produce a hierarchical representation for the graph in the form of a 'Diagram'.
-drawHier' :: (Show a, Countable a) => (Graph a -> Settings) -> (a -> Diagram B) -> Graph a -> Diagram B
-drawHier' settingsF drawF g = visualiseHier drawF g 0 (settingsF g) # frame 0.1
+-- | Takes 'Settings', a 'Vertex'-to-'Diagram' function and a 'Graph' to produce a hierarchical representation for the graph in the form of a 'Diagram'.
+drawHier' :: (Show a, Countable a) => Settings -> (a -> Diagram B) -> Graph a -> Diagram B
+drawHier' s drawF g = visualiseHier drawF g 0 s # frame 0.1
 
 -- | Produces the default 'Settings' for the supplied 'Graph'. 
 -- The arrow heads and shafts automatically scale to the number of graph vertices, the 'Graph' is 'Directed' and the group background colours alternate using 'alternatingColour' by default with an opacity of 1. 

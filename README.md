@@ -9,13 +9,13 @@ Each graph drawing module (excluding `Visualise.GraphViz`) has two drawing funct
 (Show a, Eq a, Countable a) => Graph a -> Diagram B
 ```
 
-Meaning that it requires a graph of the type defined by `Algebra.Graph` and from this produces a `Diagram` from the `Diagrams` library. The corrisponding function which requires a `Settings`-producing function and a custom node-drawing function has the type signature of:
+Meaning that it requires a graph of the type defined by `Algebra.Graph` and from this produces a `Diagram` from the `Diagrams` library. The corrisponding function which requires a `Settings` instance and a custom node-drawing function has the type signature of:
 ```Haskell
-(Show a, Eq a, Countable a) => (Graph a -> Settings) -> (a -> Diagram B) -> Graph a -> Diagram B
+(Show a, Eq a, Countable a) => Settings -> (a -> Diagram B) -> Graph a -> Diagram B
 ```
 The output of these functions is suitable to be given to the following `saveSVG` function.
 
-The `Settings` type produced by the `Settings`-producing function required by `drawGraph'` has the definition:
+The `Settings` type required by `drawGraph'` has the definition:
 ```Haskell
 data Settings = Settings { dynamicHead :: Measure Double
                          , dynamicThick :: Measure Double
@@ -63,7 +63,7 @@ Where `a` can be of the type `String`, `Char`, `Int` or even `Graph b` (i.e. a v
 ## Tree-Like Layouts
 The `Visualise.Tree` module is the most developed module.
 
-Graphs with no cycles can be drawn as trees using the `Visualise.Tree` module which has two main drawing functions which use default settings and two extra functions which corrispond to the main two but add a `Settings`-producing function parameter and a `Vertex`-drawing function. `drawTree` draws the graph will all its connections whereas `drawTreePartialOrder` uses the Coffman-Graham algorithm to produce the layout, which removes/reduces the indirect dependancies in order to simplify the (partial order) graph. Topological ordering using Kahn's algorithm is carried out for both functions, followed then by the nodes being drawn in layers and then connected.
+Graphs with no cycles can be drawn as trees using the `Visualise.Tree` module which has two main drawing functions which use default settings and two extra functions which corrispond to the main two but add a `Settings` function parameter and a `Vertex`-drawing function. `drawTree` draws the graph will all its connections whereas `drawTreePartialOrder` uses the Coffman-Graham algorithm to produce the layout, which removes/reduces the indirect dependancies in order to simplify the (partial order) graph. Topological ordering using Kahn's algorithm is carried out for both functions, followed then by the nodes being drawn in layers and then connected.
 
 The `Maybe` `Settings` parameters which allow the spacing between nodes and layers, the padding around the graph, the arrowhead size/shaft thickness and whether the graph is directed (so if edges should have arrows) to be set are used. 
 

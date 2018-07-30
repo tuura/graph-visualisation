@@ -113,18 +113,17 @@ listConnectedOnly = nub . foldr (\(a,b) acc -> a : b : acc) []
 
 -- | Uses 'drawFlatAdaptive'' with default 'Settings' provided by 'defaultAdaptiveSettings'.
 drawFlatAdaptive :: (Show a, Eq a, Countable a) => Graph a -> Diagram B
-drawFlatAdaptive = drawFlatAdaptive' defaultAdaptiveSettings drawDefaultNode
+drawFlatAdaptive g = drawFlatAdaptive' (defaultAdaptiveSettings g) drawDefaultNode g
 
 -- | Draws a flat 'Graph' with an adaptive layout.
-drawFlatAdaptive' :: (Show a, Eq a) => (Graph a -> Settings) -> (a -> Diagram B) -> Graph a -> Diagram B
-drawFlatAdaptive' settingsF drawF g = outDiag <> boundingRect outDiag
+drawFlatAdaptive' :: (Show a, Eq a) => Settings -> (a -> Diagram B) -> Graph a -> Diagram B
+drawFlatAdaptive' s drawF g = outDiag <> boundingRect outDiag
     where outDiag = (foldr (\(a,b) acc -> drawArrow s a b acc) beforeArrowsDiag connections) # frame 0.1
           beforeArrowsDiag = overlayedDiagram ||| strutX 0.1 ||| connectedDiagram
           overlayedDiagram = overlayedOnlyDiagram (nodes \\ connectedNodes)
           connectedDiagram = connectedOnlyDiagram connectedNodes connections . initialPositions (fromJust . initPos $ s) $ connectedNodes
           connectedNodes = listConnectedOnly connections
           (ProcessedGraph nodes connections) = getVertices drawF g
-          s = settingsF g
 
 -- | The default 'Settings' function for graphs generated with "Visualise.FlatAdaptive".
 defaultAdaptiveSettings :: (Countable a) => Graph a -> Settings

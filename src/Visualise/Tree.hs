@@ -195,11 +195,11 @@ connectVertices s a b d
 -- | Removes indirect connections from the graph and produces a 'Diagram', using 'drawTreePartialOrder'' with the default drawing 'Settings' provided 'defaultTreeSettings'. 
 -- Self-loops are not supported.
 drawTreePartialOrder :: (Show a, Eq a, Countable a) => Graph a -> Diagram B
-drawTreePartialOrder = drawTreePartialOrder' defaultTreeSettings drawDefaultNode
+drawTreePartialOrder g = drawTreePartialOrder' (defaultTreeSettings g) drawDefaultNode g
 
 {-| Removes indirect connections from the graph and draws it using 'visualiseTree', producing a 'Diagram'.
-Provides a parameter to supply a function that takes the graph and returns an instance of the 'Settings' type that will give the drawing functions the graph visualisation settings.
-An example of such a function is the 'defaultTreeSettings' function:
+Provides a parameter to supply an instance of the 'Settings' type that will give the drawing functions the graph visualisation settings.
+An example is the output of the 'defaultTreeSettings' function:
 @
 defaultTreeSettings :: (Countable a) => Graph a -> Settings
 defaultTreeSettings g = Settings (dynamicStyle small $ count g) 
@@ -218,27 +218,25 @@ This shows that the arrow head size, arrow shaft thickness, whether the graph is
 The indirect conenctions are removed by using 'reduction' and the graph is processed by 'getVertices' to produce a 'ProcessedGraph' instance containing the vertices and their connections.
 Self-loops are not supported.
 -}
-drawTreePartialOrder' :: (Show a, Eq a, Countable a) => (Graph a -> Settings) -> (a -> Diagram B) -> Graph a -> Diagram B
-drawTreePartialOrder' settingsF drawF g = visualiseTree s nodes newConnections reduced
+drawTreePartialOrder' :: (Show a, Eq a, Countable a) => Settings -> (a -> Diagram B) -> Graph a -> Diagram B
+drawTreePartialOrder' s drawF g = visualiseTree s nodes newConnections reduced
     where newConnections = reducedConnections reduced
           reduced = reduction (connectedTo connections) []
           (ProcessedGraph nodes connections) = getVertices drawF g
-          s = settingsF g
 
 -- | Draws the provided graph as a tree, producing a 'Diagram' using 'drawTree'', using the default settings. Self-loops are supported.
 drawTree :: (Show a, Eq a, Countable a) => Graph a -> Diagram B
-drawTree = drawTree' defaultTreeSettings drawDefaultNode
+drawTree g = drawTree' (defaultTreeSettings g) drawDefaultNode g
 
--- | Draws the graph provided with 'visualiseTree', using the provided function to produce the visualisation 'Settings'. For more information on customisable settings see 'drawTree''.
+-- | Draws the graph provided with 'visualiseTree', using the provided visualisation 'Settings'.
 -- Uses 'getVertices' to produce a 'ProcessedGraph' with the graph's verices and conenctions, then uses 'visualiseTree' with these, self-loops are supported.
-drawTree' :: (Show a, Eq a, Countable a) => (Graph a -> Settings) -> (a -> Diagram B) -> Graph a -> Diagram B
-drawTree' settingsF drawF g = visualiseTree s nodes connections connectedList
+drawTree' :: (Show a, Eq a, Countable a) => Settings -> (a -> Diagram B) -> Graph a -> Diagram B
+drawTree' s drawF g = visualiseTree s nodes connections connectedList
     where connectedList = connectedTo connections
           (ProcessedGraph nodes connections) = getVertices drawF g
-          s = settingsF g
 
 -- | Generates a default 'Settings' from the provided graph.
--- The arrow head suze and shaft thickness vary in accordance with the graph size and the graph is 'Directed'and vertically orientated with layer separation, vertex (horizonal) separation and frame padding of 0.2, 0.3 and 0.1 respectively. 
+-- The arrow head size and shaft thickness vary in accordance with the graph size and the graph is 'Directed'and vertically orientated with layer separation, vertex (horizonal) separation and frame padding of 0.2, 0.3 and 0.1 respectively. 
 defaultTreeSettings :: (Countable a) => Graph a -> Settings
 defaultTreeSettings g = Settings (dynamicStyle small $ count g)
                                  (dynamicStyle thin $ count g)

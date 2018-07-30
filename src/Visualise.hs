@@ -71,14 +71,13 @@ drawGraph Hierarchical = drawHier
 drawGraph Adaptive = drawFlatAdaptive
 drawGraph ExpressionTree = drawExpressionTree
 
--- | Draw a graph using the specified method, but also using the specified settings (provided as a function that will take a graph and return a 'Settings' instance, see "Visualise").
-drawGraph' :: (Show a, Eq a, Countable a) => Method -> (Graph a -> Settings) -> (a -> Diagram B) -> Graph a -> Diagram B
+-- | Draw a graph using the specified method, but also using the specified 'Settings'.
+drawGraph' :: (Show a, Eq a, Countable a) => Method -> Settings -> (a -> Diagram B) -> Graph a -> Diagram B
 drawGraph' Tree = drawTree'
 drawGraph' TreePartialOrder = drawTreePartialOrder'
 drawGraph' Circle = drawFlatCircle'
 drawGraph' Hierarchical = drawHier'
 drawGraph' Adaptive = drawFlatAdaptive'
--- drawGraph' ExpressionTree = drawExpressionTree'
 
 -- | Saves a diagram to an SVG file at the specified 'FilePath', with the specified 'Dimensions'. Only one dimension is needed, they are given in the format:
 -- @

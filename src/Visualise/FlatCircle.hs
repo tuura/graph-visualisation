@@ -37,17 +37,16 @@ layoutPoly n = regPoly n 1
 
 -- | Draws the provided graph as a circle with default settings.
 drawFlatCircle :: (Show a, Eq a, Countable a) => Graph a -> Diagram B
-drawFlatCircle = drawFlatCircle' defaultFlatCircleSettings drawDefaultNode
+drawFlatCircle g = drawFlatCircle' (defaultFlatCircleSettings g) drawDefaultNode g
 
 -- | Draws the provided graph with each graph vertex at a vertex of a regular polygon with the same number of sides 
-drawFlatCircle' :: (Show a, Eq a, Countable a) => (Graph a -> Settings) -> (a -> Diagram B) -> Graph a -> Diagram B
-drawFlatCircle' settingsF drawF g = connected # frame 0.1
+drawFlatCircle' :: (Show a, Eq a, Countable a) => Settings -> (a -> Diagram B) -> Graph a -> Diagram B
+drawFlatCircle' s drawF g = connected # frame 0.1
     where connected = foldr (\(a,b) acc -> connectOutside' arrowOpts (name a) (name b) acc) noConnDiag connections
           noConnDiag = atPoints vertices (diag <$> nodes)
           vertices = trailVertices layout
           layout   = layoutPoly $ count g
           (ProcessedGraph nodes connections) = getVertices drawF g
-          s = settingsF g
           arrowOpts = with & shaftStyle %~ lw (dynamicThick s) & if directed s == Directed then headLength .~ dynamicHead s else arrowHead .~ noHead
 
 -- | The default 'Settings' function for this drawing method. By default arrow heads and shafts adapt to the graph size and the graph is 'Directed'.
