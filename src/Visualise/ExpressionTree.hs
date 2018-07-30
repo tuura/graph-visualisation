@@ -1,5 +1,30 @@
+-----------------------------------------------------------------------------
+-- |
+-- Module: Visualise.ExpressionTree
+-- Copyright : (c) Sam Prescott 2018
+-- 
+-- Visualises an algebraic 'Graph' expression as an expression tree: each
+-- 'Vertex' is a leaf and are joined by a node which is represented by a
+-- different 'Diagram' depending on if the two vertices are joined by a 'Connect'
+-- or an 'Overlay'. By default 'Connect' is represented by a '*' in a circle
+-- and 'Overlay' is represented by a '+' in a circle.
+-- 
+-- 'drawExpressionTree' can be used to draw the 'Graph' representation with 
+-- default 'Settings' and 'Drawing's. This function can be invoked by the
+-- main drawing function 'drawGraph' in the main "Visualise" module, using the
+-- 'ExpressionTree' 'Method' constructor.
+-- 'drawExpressionTree'' can also be used but as well as a 'Graph' extra
+-- parameters can be provided to determine how to draw different nodes in the
+-- expression tree, however this function cannot be invoked using 'drawGraph''
+-- from "Visualise" so must be used directly.
+--
+-----------------------------------------------------------------------------
 module Visualise.ExpressionTree (
-    drawExpressionTree, drawExpressionTree'
+    -- * Visualises a 'Graph' as an expression tree with default 'Settings'.
+    drawExpressionTree, 
+
+    -- * Visualises a 'Graph' as an expression tree drawn using the specified parameters.
+    drawExpressionTree'
 ) where
 
 import Visualise.Common
@@ -9,13 +34,14 @@ import Diagrams.Backend.SVG
 
 -- | The default diagram for 'Overlay' link nodes - a circle of size '0.1' with a '+' inside.
 defaultOverlayDiagram :: Diagram B
-defaultOverlayDiagram = (drawDefaultEmptyNode 0.1 <> text "+" # fontSizeL 0.1)
+defaultOverlayDiagram = drawDefaultEmptyNode 0.1 <> text "+" # fontSizeL 0.1
 
 -- | The default diagram for 'Connect' link nodes - a circle of size '0.1' with a '*' inside.
 defaultConnectDiagram :: Diagram B
-defaultConnectDiagram = (drawDefaultEmptyNode 0.1 <> text "*" # fontSizeL 0.1 # translateY (-0.02))
+defaultConnectDiagram = drawDefaultEmptyNode 0.1 <> text "*" # fontSizeL 0.1 # translateY (-0.02)
 
 -- | Takes a left and right diagram and links them using the provided 'linkNode' 'Diagram' and "Diagrams.Prelude"'s 'conenctOutside' for links.
+-- The 'String' tuple elements are accumulators used for the naming of linking nodes.
 branch :: Diagram B -> (Diagram B, String) -> (Diagram B, String) -> (Diagram B, String)
 branch linkNode (a,c1) (b,c2) = (connectOutside' arrowOpts newLink bLink $ connectOutside' arrowOpts newLink aLink diag, newCount)
     where arrowOpts = with & shaftStyle %~ lw thin & arrowHead .~ noHead
@@ -27,13 +53,12 @@ branch linkNode (a,c1) (b,c2) = (connectOutside' arrowOpts newLink bLink $ conne
 
 -- | Visualises the provided "Graph" in the form of an expression tree with custom nodes and link nodes.
 -- Folds through the graph with tuples of the type ('Diagram B', 'String') where the 'Diagram' is the layout of the graph section and the 'Sting' is an accumulator used for link identification when joining branches.
-drawExpressionTree' :: (Show a, Countable a)  -- ^ The graph's vertices must be showable and be able to be counted.
-                    => Diagram B              -- ^ The default 'Empty' node 'Diagram'.
-                    -> (a -> Diagram B)       -- ^ A function which takes a vertex and produces a node 'Diagram'.
-                    -> Diagram B              -- ^ A 'Diagram' used for linking two expression tree branches when "Overlay" is used, by default 'defaultOverlayDiagram' is used (a circle containing a '+').
-                    -> Diagram B              -- ^ A 'Diagram' used for linking two expression tree branches when "Connect" is used, by default 'defaultConnectDiagram' is used (a circle containing a '*').
-                    -> Graph a                -- ^ The 'Graph' to be visualised as an expression tree.
-                    -> Diagram B              -- ^ The resultant expression tree 'Diagram'.
+drawExpressionTree' :: (Show a, Countable a) => Diagram B              -- ^ The default 'Empty' node 'Diagram'.
+                                             -> (a -> Diagram B)       -- ^ A function which takes a vertex and produces a node 'Diagram'.
+                                             -> Diagram B              -- ^ A 'Diagram' used for linking two expression tree branches when "Overlay" is used, by default 'defaultOverlayDiagram' is used (a circle containing a '+').
+                                             -> Diagram B              -- ^ A 'Diagram' used for linking two expression tree branches when "Connect" is used, by default 'defaultConnectDiagram' is used (a circle containing a '*').
+                                             -> Graph a                -- ^ The 'Graph' to be visualised as an expression tree.
+                                             -> Diagram B              -- ^ The resultant expression tree 'Diagram'.
 drawExpressionTree' emptyNode drawF overlayDiag connectDiag g = (fst $ foldg ((emptyNode # named "link_e","e")) (\a -> let c = "v" ++ show a in (drawF a # named ("link_" ++ c),c)) (branch overlayDiag) (branch connectDiag) g) # frame 0.1
 
 -- | Visualises the provided "Graph" in the form of an expression tree with default nodes and link nodes, giving a "Diagram" as its output.

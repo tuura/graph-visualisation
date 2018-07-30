@@ -2,16 +2,30 @@
 {-# LANGUAGE FlexibleContexts          #-}
 {-# LANGUAGE TypeFamilies              #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
-
+-----------------------------------------------------------------------------
+-- |
+-- Module: Visualise.FlatCircle
+-- Copyright : (c) Sam Prescott 2018
+-- 
+-- Draws a 'Graph' with each vertex at a vertex of a regular polygon with the
+-- same number of sides as the 'Graph' does vertices.
+--
+-- Provides a function which draws the 'Graph' with default 'Settings', 
+-- 'drawFlatCircle', and a second function which draws the graph with custom
+-- 'Settings'.
+--
+-----------------------------------------------------------------------------
 module Visualise.FlatCircle (
-    Settings(..),
+    -- * Draws a 'Graph' with default 'Settings'.
+    drawFlatCircle, 
 
-    drawFlatCircle, drawFlatCircle'
+    -- * Draws a 'Graph' with customised 'Settings'.
+    drawFlatCircle'
 ) where
 
 import Algebra.Graph
 import Visualise.Common
-import Diagrams.Prelude hiding (Empty)
+import Diagrams.Prelude     hiding (Empty)
 import Diagrams.Backend.SVG
 import Diagrams.Path
 import Data.Char
@@ -41,6 +55,7 @@ defaultFlatCircleSettings :: (Countable a) => Graph a -> Settings
 defaultFlatCircleSettings g = Settings (dynamicStyle normal $ count g)
                              (dynamicStyle thin $ count g)
                              Directed
+                             Nothing
                              Nothing
                              Nothing
                              Nothing

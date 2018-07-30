@@ -3,25 +3,52 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE TypeFamilies #-}
-
+-----------------------------------------------------------------------------
+-- |
+-- Module: Visualise.Common
+-- Copyright : (c) Sam Prescott 2018
+-- 
+-- Provides common types, typeclasses and functions used by the various drawing
+-- modules.
+--
+-----------------------------------------------------------------------------
 module Visualise.Common (
-    Settings(..), Node(..), ProcessedGraph(..), Directed(..),
+    -- * The 'Settings' type used by most drawing modules to customise the drawing of a 'Graph'.
+    Settings(..), 
 
+    -- * The 'Node' type which is used by the drawing modules to represent a vertex, containing a 'String' representation and a 'Diagram' representation.
+    Node(..), 
+
+    -- * The 'ProcessedGraph' type which is used by 'getVertices' to represent a 'Graph' that has been folded through, with a list of vertices and a list of conenctions.
+    ProcessedGraph(..), 
+
+    -- * The 'Boolean' type 'Directed' which determines whether a 'Graph' is directed/has arrows on connections.
+    Directed(..),
+
+    -- * An array of tuples representing connections in a 'Graph'.
     ConnectList,
 
-    Draw,
+    -- * The 'Draw' TypeClass which determines how to draw a 'Node' using the function 'draw'.
+    Draw, draw,
 
-    Countable,
+    -- * The 'Countable' TypeClass which determines how to count the number of vertices in a 'Graph'/'Graph' of 'Graph's using the function 'count'.
+    Countable, count,
 
-    draw, count,
-
+    -- * The default 'Vertex'-drawing functions.
     drawDefaultNode, drawDefaultNodeWithSize, drawDefaultEmptyNode, drawNodeWithEmptyFlag,
 
-    getVertices, connectedFrom, connectedTo, dynamicStyle
+    -- * Gets a 'ProcessedGraph' containing a 'Graph''s vertices and connections.
+    getVertices, 
+
+    -- * Gets the vertices connected from and to a specified 'Vertex'.
+    connectedFrom, connectedTo, 
+
+    -- * Used to adapt 'Graph'-drawing parameters in accordance with the size of a graph.
+    dynamicStyle
 ) where
 
 import Algebra.Graph
-import Diagrams.Prelude hiding (Empty, union)
+import Diagrams.Prelude     hiding (Empty, union)
 import Diagrams.Backend.SVG
 import Data.List
 import Data.Either
@@ -35,35 +62,37 @@ data Settings =
              -- @
              -- dynamicStyle small $ count g
              -- @
-             -- With 'normal' being used in place of 'small' for some methods
+             -- With 'normal' being used in place of 'small' for some methods.
              dynamicHead :: Measure Double
              -- | The thickness of the arrow shafts for the graph drawing, again useful to scale like 'dynamicHead' like so:
              -- @
              -- dynamicStyle thin $ count g
              -- @
            , dynamicThick :: Measure Double
-             -- | Whether the graph is 'Directed' (arrows on the connections between nodes). The type 'Directed' is a boolean value that can either be 'Directed' or 'Undirected'
+             -- | Whether the graph is 'Directed' (arrows on the connections between nodes). The type 'Directed' is a boolean value that can either be 'Directed' or 'Undirected'.
            , directed :: Directed
-             -- | The spacing between layers when using the "Visualise.Tree" module's functions
+             -- | The orientation of the graph when using the "Visualise.Tree" module's functions.
+           , horizontalOrientation :: Maybe Bool
+             -- | The spacing between layers when using the "Visualise.Tree" module's functions.
            , layerSpacing :: Maybe Double
-             -- | The spacing between vertices when using the "Visualise.Tree" module's functions
+             -- | The spacing between vertices when using the "Visualise.Tree" module's functions.
            , nodeSpacing :: Maybe Double
-             -- | The padding around the graph when using the "Visualise.Tree" module's functions
+             -- | The padding around the graph when using the "Visualise.Tree" module's functions.
            , graphPadding :: Maybe Double
-             -- | The background colour of groups when using the "Visualise.Hierarchical" module
+             -- | The background colour of groups when using the "Visualise.Hierarchical" module.
            , colF :: Maybe (Int -> Colour Double)
-             -- | The background opacity of groups when using the "Visualise.Hierarchical" module
+             -- | The background opacity of groups when using the "Visualise.Hierarchical" module.
            , bgOp :: Maybe Double
              -- | The mode of initial positioning for the vertices when using "Visualise.FlatAdaptive", changing this results in differently layed out graphs. 
              -- Useful to experiment with to best display a graph.
            , initPos :: Maybe Int
            }
 
--- | The 'Node' data type represents a node/'Vertex' on a graph, storing the node's String name and its corrisponding diagram from the "Diagrams" library
+-- | The 'Node' data type represents a node/'Vertex' on a graph, storing the node's String name and its corrisponding diagram from the "Diagrams" library.
 data Node = 
-  Node { -- | Use 'name' to get the String representation of a node
+  Node { -- | Use 'name' to get the String representation of a node.
          name :: String
-         -- | Use 'diag' to get the "Diagrams" representation of a node
+         -- | Use 'diag' to get the "Diagrams" representation of a node.
        , diag :: Diagram B
        }
 

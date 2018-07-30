@@ -1,16 +1,34 @@
 {-# LANGUAGE NoMonomorphismRestriction #-}
 {-# LANGUAGE FlexibleContexts          #-}
 {-# LANGUAGE TypeFamilies              #-}
-
+-----------------------------------------------------------------------------
+-- |
+-- Module: Visualise.Hierarchical
+-- Copyright : (c) Sam Prescott 2018
+-- 
+-- Draws a 'Graph' as a hierarchical graph by grouping together vertices with
+-- common connections and containing them with a box.
+--
+-- The main drawing function 'drawHier' draws a hierarchical graph with default
+-- 'Settings' as defined by 'defaultHierSettings' with alternating background
+-- colours as defined by 'alternatingColour', as well as a second function
+-- 'drawHier'' which produces a customised drawing.
+--
+-----------------------------------------------------------------------------
 module Visualise.Hierarchical (
-    Settings(..),
+    -- * The hierarchical graph-drawing functions.
+    drawHier, drawHier', 
 
-    drawHier, drawHier', defaultHierSettings, alternatingColour
+    -- * The default 'Settings' used by 'drawHier'.
+    defaultHierSettings, 
+
+    -- * The alternating-colour-producing function using by 'defaultHierSettings'.
+    alternatingColour
 ) where
 
-import Algebra.Graph hiding ((===))
-import Visualise.Common hiding (name)
-import Diagrams.Prelude hiding (Empty)
+import Algebra.Graph        hiding ((===))
+import Visualise.Common     hiding (name)
+import Diagrams.Prelude     hiding (Empty)
 import Diagrams.Backend.SVG
 import Data.Maybe
 
@@ -54,6 +72,7 @@ defaultHierSettings g = Settings (dynamicStyle normal $ count g)
                                  Nothing
                                  Nothing
                                  Nothing
+                                 Nothing
                                  (Just alternatingColour) 
                                  (Just 1)
                                  Nothing
@@ -64,7 +83,6 @@ alternatingColour :: Int            -- ^ The depth of the current layer of the g
 alternatingColour i
     | odd i = red
     | otherwise = cyan
-
 
 -- Test data:
 

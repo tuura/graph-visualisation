@@ -2,12 +2,25 @@
 {-# LANGUAGE TypeSynonymInstances #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE FlexibleContexts #-}
-
+-----------------------------------------------------------------------------
+-- |
+-- Module: Visualise.GraphViz
+-- Copyright : (c) Sam Prescott 2018
+-- 
+-- Uses "Diagrams.TwoD.GraphViz" to enable "Data.GraphViz" to be used in 
+-- combination with "Diagrams" to draw a 'Graph' layed out with a specified
+-- 'GraphvizCommand' with 'drawWithGraphViz'.
+--
+-----------------------------------------------------------------------------
 module Visualise.GraphViz (
+    -- * The 'TypeClass' that determines how to draw 'Graph' vertices, exported to enable 'Graph's of custom types.
+    Draw,
+
+    -- * The drawing function that can take a 'GraphvizCommand' to visualise a 'Graph'.
     drawWithGraphViz
 ) where
 
-import Visualise.Common hiding (Draw,draw)
+import Visualise.Common                     hiding (Draw,draw)
 import Visualise.Tree
 import Diagrams.Backend.SVG.CmdLine
 -- import Diagrams.Backend.Rasterific.CmdLine
@@ -15,7 +28,7 @@ import Diagrams.Prelude
 import Diagrams.TwoD.GraphViz
 import Data.GraphViz
 import Algebra.Graph
-import Data.Graph.Inductive.PatriciaTree (Gr)
+import Data.Graph.Inductive.PatriciaTree    (Gr)
 
 -- | Used to determine how to draw a vertex, different to "Visualise.Common.Draw".
 class Draw a where
@@ -28,6 +41,7 @@ instance (Show a, Draw a, Eq a, Countable a) => Draw (Graph a) where
     draw dir g = drawTree' (\gr -> Settings (dynamicStyle small $ count gr) 
                                             (dynamicStyle thin $ count gr) 
                                             dir 
+                                            (Just False)
                                             (Just 0.2) 
                                             (Just 10) 
                                             (Just 5) 

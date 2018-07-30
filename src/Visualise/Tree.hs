@@ -4,14 +4,36 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE FlexibleInstances #-}
-
+-----------------------------------------------------------------------------
+-- |
+-- Module: Visualise.Tree
+-- Copyright : (c) Sam Prescott 2018
+-- 
+-- Enables a 'Graph' to be drawn in a 'Tree' style. Provides four drawing
+-- functions: 'drawTree' to draw the graph with default 'Settings' and 'drawTree''
+-- allows the 'Settings' to be customised, as well as 'drawTreePartialOrder' 
+-- which uses the Coffman-Graham algorithm to remove indirect connections
+-- for directed acyclic graphs and 'drawTreePartialOrder'' which does the same
+-- but allows the 'Settings' to be specified.
+--
+-----------------------------------------------------------------------------
 module Visualise.Tree (
-    drawTree, drawTree', drawTreePartialOrder, drawTreePartialOrder', defaultTreeSettings, defaultTreeSettingsHorizontal
+    -- * The main drawing function: the full 'Graph' as specified with default 'Settings'.
+    drawTree, 
+
+    -- * Allows the 'Settings' to be customised.
+    drawTree', 
+
+    -- * Removes indirect connections using the Coffman-Graham algorithm before drawing.
+    drawTreePartialOrder, drawTreePartialOrder', 
+
+    -- * The default 'Settings' functions used with 'drawTree'' and 'drawTreePartialOrder''.
+    defaultTreeSettings, defaultTreeSettingsHorizontal
 ) where
 
 import Visualise.Common
 import Algebra.Graph
-import Diagrams.Prelude hiding (Empty, union)
+import Diagrams.Prelude     hiding (Empty, union)
 import Diagrams.Backend.SVG
 import Diagrams.Path
 import Data.List
