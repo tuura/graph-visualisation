@@ -25,15 +25,17 @@ module Visualise (
     Method(..),
 
     -- * The two main graph drawing functions.
-    drawGraph, drawGraph', saveSVG,
+    drawGraph, drawGraph',
 
     -- * The function for drawing with GraphViz, reexported from "Visualise.GraphViz".
     drawWithGraphViz,
 
     -- * The functions for drawing an expression tree from a graph reexported from "Visualise.ExpressionTree". 
     -- 'drawExpressionTree' can be used with 'drawGraph' and the 'Method' constructor but 'drawExpressionTree'' can't as it requires extra parameters.
-    drawExpressionTree, drawExpressionTree'
+    drawExpressionTree, drawExpressionTree',
 
+    -- * Saves a 'Diagram' to to a specified SVG file with the specified 'Dimensions'.
+    saveSVG
 ) where
 
 import Visualise.Common
