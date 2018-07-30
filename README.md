@@ -1,5 +1,7 @@
 # graph-visualisation
 # README in progress
+## See the documentation [here](https://dev.sam.plus/graph-visualisation/docs).
+
 Provided are different ways to draw an algebraic graph (as defined by `Algebra.Graph`) using the Haskell `Diagrams` library.
 
 The main module `Visualise` exports two main graph drawing functions: `drawGraph` which draws a graph using the specified graph-drawing method with default `Settings` and `drawGraph'` which takes a custom `Settings` function and a custom `Vertex`-drawing function. The type `Method` has constructors for the different methods of drawing a `Graph`. The module `Visualise.ExpressionTree` however can only be used with `drawGraph` as its customisable function `drawExpressionTree'` takes extra parameters than the other modules. Also `Visualise.GraphViz` can be used to use `Data.GraphViz` to generate a `Graph` layout using the function `drawWithGraphViz` which is re-reported from the main `Visualise` module and can be bound to the `saveSVG` function to save an SVG file.

@@ -7,7 +7,7 @@ synopsis:            Provides a series of graph-drawing functions for use with t
 description:         This <https://github.com/tuura/graph-visualisation library> works with the <https://hackage.haskell.org/package/algebraic-graphs algebraic-graphs> library to visualise graphs.
 					 Different visualisation methods are included, each in their own module. However, the top-level module <Visualise.html Visualise> provides the main drawing functions /drawGraph/ and /drawGraph'/ along with re-exporting funtions from the <Visualise-GraphViz.html Visualise.GraphViz> module (which uses the renowned <http://hackage.haskell.org/package/graphviz GraphViz library> to help visualise graphs and therefore requires more specialised functions) and the <Visualise-ExpressionTree.html Visualise.ExpressionTree> module (whos customisable function requires extra parameters compared to the other modules).
 					 There a common functions which more than one of the modules rely on and these are exported by the <Visualise-Common.html Visualise.Common> module.
-homepage:            dev.sam.plus/graph-visualisation/docs
+homepage:            https://dev.sam.plus/graph-visualisation/docs
 license:             GPL-3
 license-file:        LICENSE
 author:              Sam Prescott
@@ -19,7 +19,7 @@ extra-source-files:  ChangeLog.md, README.md
 cabal-version:       >=1.10
 
 library
-  exposed-modules:     Visualise, Visualise.Common, Visualise.ExpressionTree, Visualise.FlatAdaptive, Visualise.FlatAdaptive2, Visualise.FlatCircle, Visualise.GraphViz, Visualise.GraphVizTest, Visualise.Hierarchical, Visualise.Hierarchical2, Visualise.Tree
+  exposed-modules:     Visualise, Visualise.Common, Visualise.ExpressionTree, Visualise.FlatAdaptive, Visualise.FlatCircle, Visualise.GraphViz, Visualise.Hierarchical, Visualise.Tree
   -- other-modules:       
   other-extensions:    NoMonomorphismRestriction, FlexibleContexts, FlexibleInstances, UndecidableInstances, TypeFamilies, MultiParamTypeClasses, TypeSynonymInstances, ScopedTypeVariables
   build-depends:       base >=4.10 && <4.11, algebraic-graphs >=0.1 && <0.2, diagrams-lib >=1.4 && <1.5, diagrams-svg >=1.4 && <1.5, graphviz >=2999.20 && <2999.21, diagrams-graphviz >=1.4 && <1.5, fgl >=5.6 && <5.7
