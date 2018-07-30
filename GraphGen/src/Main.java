@@ -29,7 +29,9 @@ public class Main {
     }
 
     private static String v() {
-        return "(Vertex \"" + i++ + "\")";
+//        return "(Vertex \\\"" + i++ + "\\\")";
+        i = r.nextInt(layers) + 1;
+        return "(Vertex " + i++ + ")";
     }
 
     private static String o(String a, String b) {
