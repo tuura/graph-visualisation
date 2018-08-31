@@ -2,13 +2,13 @@
 -- |
 -- Module: Visualise
 -- Description : Provides a series of functions for drawing algebraic graphs.
--- Copyright : (c) Sam Prescott 2018
+-- Copyright : (c) Samuel Prescott 2018
 -- 
 -- Provides two graph drawing functions - 'drawGraph' and 'drawGraph'' - that
 -- can invoke various graph drawing functions depending on their 'Method' parameter.
 -- 'drawGraph' draws a graph with default settings whereas 'drawGraph'' can be
--- provided with a 'Settings' parameter. The 'Graph' to be drawn is an instance
--- of the type 'Graph' as defined by "Algebra.Graph".
+-- provided with a 'Settings' parameter. The graph to be drawn is an instance
+-- of the type graph as defined by "Algebra.Graph".
 -- 
 -- The five graph drawing 'Method's defined for 'Method' can be used for both
 -- drawing functions, apart from 'ExpressionTree' which can only be used for
@@ -24,6 +24,9 @@ module Visualise (
     -- * The constructors for the graph-drawing methods.
     Method(..),
 
+    -- * The type used to represent the dimensions of an output <https://hackage.haskell.org/package/diagrams Diagram>, a tuple of Maybe Doubles.
+    Dimensions,
+
     -- * The two main graph drawing functions.
     drawGraph, drawGraph',
 
@@ -34,7 +37,7 @@ module Visualise (
     -- 'drawExpressionTree' can be used with 'drawGraph' and the 'Method' constructor but 'drawExpressionTree'' can't as it requires extra parameters.
     drawExpressionTree, drawExpressionTree',
 
-    -- * Saves a 'Diagram' to to a specified SVG file with the specified 'Dimensions'.
+    -- * Saves a <https://hackage.haskell.org/package/diagrams Diagram> to to a specified SVG file with the specified 'Dimensions'.
     saveSVG
 ) where
 
@@ -58,7 +61,7 @@ data Method = Tree              -- ^ The 'drawTree' function from "Visualise.Tre
             | Adaptive          -- ^ The "Visualise.FlatAdaptive" module will be used to draw the graph, with the layout of vertices being dynamic depending on the connections between them.
             | ExpressionTree    -- ^ The "Visualise.ExpressionTree" module will be used to draw an expression tree representation of the graph.
 
--- | The 'Dimensions' data type is used to store the dimensions for writing a 'Diagram' to a file. Either the width or height (or both) can be provided in a maybe tuple in the order (Width, Height).
+-- | The 'Dimensions' data type is used to store the dimensions for writing a <https://hackage.haskell.org/package/diagrams Diagram> to a file. Either the width or height (or both) can be provided in a maybe tuple in the order (Width, Height).
 type Dimensions = (Maybe Double, Maybe Double)
 
 -- | Draw a graph using the specified method, uses default settings.

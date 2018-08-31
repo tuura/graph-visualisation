@@ -4,9 +4,9 @@
 -----------------------------------------------------------------------------
 -- |
 -- Module: Visualise.Hierarchical
--- Copyright : (c) Sam Prescott 2018
+-- Copyright : (c) Samuel Prescott 2018
 -- 
--- Draws a 'Graph' as a hierarchical graph by grouping together vertices with
+-- Draws a graph as a hierarchical graph by grouping together vertices with
 -- common connections and containing them with a box.
 --
 -- The main drawing function 'drawHier' draws a hierarchical graph with default
@@ -32,20 +32,20 @@ import Diagrams.Prelude     hiding (Empty)
 import Diagrams.Backend.SVG
 import Data.Maybe
 
--- | The default function to produce a 'Diagram' for a 'Vertex'.
+-- | The default function to produce a <https://hackage.haskell.org/package/diagrams Diagram> for a vertex.
 -- Calls 'show' on the provided value and puts the text in a circle.
 drawDefaultHierNode :: (Show a) => a -> Diagram B 
 drawDefaultHierNode nn = text n # href ("javascript:alert(\"Node " ++ n ++ "\")") # fontSizeL 0.4 <> circle 0.7 # lwL 0.05 # named n
     where n = show nn
 
 -- | Parses the provided graph using recursion and draws each vertex using the provided vertex-drawing function and 'Settings'. 
--- When 'Overlay' is used the two graphs are drawn next to each other vertically surrounded by a coloured box, where the colour is determined by the 'Settings'. 
--- For 'Connect' the graphs are drawn next to each other horizontally, surrounded by a box and also connected with an arrow.
+-- When <https://hackage.haskell.org/package/algebraic-graphs-0.1.1.1/docs/Algebra-Graph.html#t:Graph Overlay> is used the two graphs are drawn next to each other vertically surrounded by a coloured box, where the colour is determined by the 'Settings'. 
+-- For <https://hackage.haskell.org/package/algebraic-graphs-0.1.1.1/docs/Algebra-Graph.html#t:Graph Connect> the graphs are drawn next to each other horizontally, surrounded by a box and also connected with an arrow.
 visualiseHier :: (Show a) => (a -> Diagram B)  -- ^ The vertex-drawing function -- takes a vertex and draws it
                           -> Graph a           -- ^ The Graph to be drawn
                           -> Int               -- ^ The current depth the recursion is into the graph, function should be called with 0 for this value.
                           -> Settings          -- ^ The 'Settings' for the visualisation.
-                          -> Diagram B         -- ^ The output 'Diagram' for the graph.
+                          -> Diagram B         -- ^ The output <https://hackage.haskell.org/package/diagrams Diagram> for the graph.
 visualiseHier drawF g@(Vertex a) l s = (drawF $ a) # lwL 0.05
 visualiseHier drawF g@(Overlay g1 g2) l s = (drawn <> boundingRect drawn # fc ((fromJust . colF) s l) # lw none # opacity (fromJust . bgOp $ s)) # named (show g)
     where drawn = (visualiseHier drawF g1 (l + 1) s === strutY 1 === visualiseHier drawF g2 (l + 1) s) # frame 0.2
@@ -59,12 +59,12 @@ visualiseHier drawF g@(Connect g1 g2) l s = (arrowed <> boundingRect arrowed # f
 drawHier :: (Show a, Countable a) => Graph a -> Diagram B
 drawHier g = drawHier' (defaultHierSettings g) drawDefaultHierNode g
 
--- | Takes 'Settings', a 'Vertex'-to-'Diagram' function and a 'Graph' to produce a hierarchical representation for the graph in the form of a 'Diagram'.
+-- | Takes 'Settings', a vertex-to-<https://hackage.haskell.org/package/diagrams Diagram> function and a graph to produce a hierarchical representation for the graph in the form of a <https://hackage.haskell.org/package/diagrams Diagram>.
 drawHier' :: (Show a, Countable a) => Settings -> (a -> Diagram B) -> Graph a -> Diagram B
 drawHier' s drawF g = visualiseHier drawF g 0 s # frame 0.1
 
--- | Produces the default 'Settings' for the supplied 'Graph'. 
--- The arrow heads and shafts automatically scale to the number of graph vertices, the 'Graph' is 'Directed' and the group background colours alternate using 'alternatingColour' by default with an opacity of 1. 
+-- | Produces the default 'Settings' for the supplied graph. 
+-- The arrow heads and shafts automatically scale to the number of graph vertices, the graph is 'Directed' and the group background colours alternate using 'alternatingColour' by default with an opacity of 1. 
 defaultHierSettings :: (Countable a) => Graph a -> Settings
 defaultHierSettings g = Settings (dynamicStyle normal $ count g)
                                  (dynamicStyle thin $ count g)

@@ -5,9 +5,9 @@
 -----------------------------------------------------------------------------
 -- |
 -- Module: Visualise.FlatAdaptive
--- Copyright : (c) Sam Prescott 2018
+-- Copyright : (c) Samuel Prescott 2018
 -- 
--- Draws a 'Graph' in an adaptive way by grouping together connected vertices.
+-- Draws a graph in an adaptive way by grouping together connected vertices.
 -- Works with some graphs however currently needs work.
 -- 
 -- Provides two drawing functions: 'drawFlatAdaptive' which uses default
@@ -15,10 +15,10 @@
 --
 -----------------------------------------------------------------------------
 module Visualise.FlatAdaptive (
-    -- * Draws a 'Graph' with an adaptive layout with default 'Settings'.
+    -- * Draws a graph with an adaptive layout with default 'Settings'.
     drawFlatAdaptive, 
 
-    -- * Draws a 'Graph' with an adaptive layout with customised 'Settings'.
+    -- * Draws a graph with an adaptive layout with customised 'Settings'.
     drawFlatAdaptive', 
 
     -- * The default 'Settings' function used by 'drawFlatAdaptive'.
@@ -61,10 +61,10 @@ getGroups = sortBy (compare `on` length . snd)
 
 -- | Goes through the groups contained in the supplied 'ConnectList', using recursion to apply 'makeGroup' to each group.
 layoutGroups :: (Show a, Eq a)   
-             => Diagram B       -- ^ The initial ungrouped 'Diagram'.
+             => Diagram B       -- ^ The initial ungrouped <https://hackage.haskell.org/package/diagrams Diagram>.
              -> [a]             -- ^ The list of vertex names.
              -> ConnectList a   -- ^ The list of connection groups
-             -> Diagram B       -- ^ The resultant 'Diagram' with groups.
+             -> Diagram B       -- ^ The resultant <https://hackage.haskell.org/package/diagrams Diagram> with groups.
 layoutGroups d n [] = mempty
 layoutGroups d n ((a,bs):xs)
     | null xs = makeGroup d (a:bs) (n \\ (a:bs))
@@ -80,7 +80,7 @@ makeGroup d c others = withNames (show <$> others) (\otherSubs d -> withNames (s
     where grouping otherSubs subs d = (mconcat $ getSub <$> otherSubs) <> (atPoints (layoutVertices . length $ subs) $ getSub <$> subs)
           
 -- | Connects the two specified vertices with an arrow. If the two vertex names are the same then a self-loop is drawn with alternate settings.
--- The 'Settings' provided determine the properties of the connections, e.g. shaft thickness, arrow head size or even if there is an arrow head at all (there won't be if the 'Graph' is 'Undirected').
+-- The 'Settings' provided determine the properties of the connections, e.g. shaft thickness, arrow head size or even if there is an arrow head at all (there won't be if the graph is 'Undirected').
 drawArrow :: (Show a, Eq a) => Settings -> a -> a -> Diagram B -> Diagram B
 drawArrow s a b d
     | a == b = connectPerim' arrowOpts2 (show a) (show b) (0 @@ turn) (-1/2 @@ turn) d
@@ -88,14 +88,14 @@ drawArrow s a b d
     where arrowOpts1 = with & shaftStyle %~ lw (dynamicThick s) & if directed s == Directed then headLength .~ dynamicHead s else arrowHead .~ noHead
           arrowOpts2 = with & shaftStyle %~ lw (dynamicThick s) & arrowShaft .~ arc xDir (4/6 @@ turn) & if directed s == Directed then headLength .~ dynamicHead s else arrowHead .~ noHead
 
--- | Produces a 'Diagram' of all the 'Graph''s vertices to be used as a basis for grouping together vertices. Has variations that can be chosen with the 'initPos' in the 'Settings' used.
+-- | Produces a <https://hackage.haskell.org/package/diagrams Diagram> of all the graph's vertices to be used as a basis for grouping together vertices. Has variations that can be chosen with the 'initPos' in the 'Settings' used.
 initialPositions :: (Draw a) => Int        -- ^ Corrisponds to which intial layout function will be used, best to use trial-and-error on a per-graph basis.
                              -> [a]        -- ^ The list of vertices.
-                             -> Diagram B  -- ^ The resultant initial 'Diagram'.
+                             -> Diagram B  -- ^ The resultant initial <https://hackage.haskell.org/package/diagrams Diagram>.
 initialPositions 1 n = cat' (r2 (-1,1)) (with & catMethod .~ Distrib & sep .~ 0.5) $ draw <$> n
 initialPositions 2 n = hsep 0.3 $ draw <$> n
 
--- | Draws the grouped 'Graph' vertices which have connections, vertices with only overlays are not included.
+-- | Draws the grouped graph vertices which have connections, vertices with only overlays are not included.
 connectedOnlyDiagram :: (Show a, Ord a) 
                      => [a]             -- ^ A list of the connected vertices.
                      -> [(a,a)]         -- ^ A list of the vertex connections.
@@ -107,7 +107,7 @@ connectedOnlyDiagram nodes connections initialDiagram = layoutGroups initialDiag
 overlayedOnlyDiagram :: (Draw a, Eq a) => [a] -> Diagram B
 overlayedOnlyDiagram overlayedOnlyNodes = hsep 0.2 $ draw <$> overlayedOnlyNodes
 
--- | Takes a list of tuples representing a 'Graph''s connections and returns all the elements present in the list (in either element of the tuples).
+-- | Takes a list of tuples representing a graph's connections and returns all the elements present in the list (in either element of the tuples).
 listConnectedOnly :: (Eq a) => [(a,a)] -> [a]
 listConnectedOnly = nub . foldr (\(a,b) acc -> a : b : acc) []
 
@@ -115,7 +115,7 @@ listConnectedOnly = nub . foldr (\(a,b) acc -> a : b : acc) []
 drawFlatAdaptive :: (Show a, Eq a, Countable a) => Graph a -> Diagram B
 drawFlatAdaptive g = drawFlatAdaptive' (defaultAdaptiveSettings g) drawDefaultNode g
 
--- | Draws a flat 'Graph' with an adaptive layout.
+-- | Draws a flat graph with an adaptive layout.
 drawFlatAdaptive' :: (Show a, Eq a) => Settings -> (a -> Diagram B) -> Graph a -> Diagram B
 drawFlatAdaptive' s drawF g = outDiag <> boundingRect outDiag
     where outDiag = (foldr (\(a,b) acc -> drawArrow s a b acc) beforeArrowsDiag connections) # frame 0.1

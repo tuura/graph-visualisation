@@ -7,9 +7,9 @@
 -----------------------------------------------------------------------------
 -- |
 -- Module: Visualise.Tree
--- Copyright : (c) Sam Prescott 2018
+-- Copyright : (c) Samuel Prescott 2018
 -- 
--- Enables a 'Graph' to be drawn in a 'Tree' style. Provides four drawing
+-- Enables a graph to be drawn in a 'Tree' style. Provides four drawing
 -- functions: 'drawTree' to draw the graph with default 'Settings' and 'drawTree''
 -- allows the 'Settings' to be customised, as well as 'drawTreePartialOrder' 
 -- which uses the Coffman-Graham algorithm to remove indirect connections
@@ -18,7 +18,7 @@
 --
 -----------------------------------------------------------------------------
 module Visualise.Tree (
-    -- * The main drawing function: the full 'Graph' as specified with default 'Settings'.
+    -- * The main drawing function: the full graph as specified with default 'Settings'.
     drawTree, 
 
     -- * Allows the 'Settings' to be customised.
@@ -165,7 +165,7 @@ visualiseLayers s levelled = betLayerSepF (fromJust . layerSpacing $ s) $ foldl 
 
 -- | The main visualisation function.
 -- Topologically sorts the list of vertices using 'getLevelList' before separating the vertices into layers by using 'levelled'.
--- A 'Diagram' is then drawn without connections, using 'visualiseLayers', and then the 'rawConnections' list is folded over and the conenctions are added one by one to produce the final diagram (which is then suurrounded by a box).
+-- A <https://hackage.haskell.org/package/diagrams Diagram> is then drawn without connections, using 'visualiseLayers', and then the 'rawConnections' list is folded over and the conenctions are added one by one to produce the final diagram (which is then suurrounded by a box).
 visualiseTree :: (Show a, Eq a, Draw a) => Settings        -- ^ A 'Settings' type instance providing the visualisation settings for the graph.
                                         -> [a]             -- ^ A list of the vertices in the graph -- designed to be of the type 'Node' with a String name and a 'Diagram B' diagram attribute.
                                         -> [(a,a)]         -- ^ A list of connections, with the first element being the tail and second element being the head (if the graph is 'Directed').
@@ -192,12 +192,12 @@ connectVertices s a b d
         where arrowOpts1 = with & shaftStyle %~ lw (dynamicThick s) & if directed s == Directed then headLength .~ dynamicHead s else arrowHead .~ noHead
               arrowOpts2 = with & shaftStyle %~ lw (dynamicThick s) & arrowShaft .~ arc xDir (4/6 @@ turn) & if directed s == Directed then headLength .~ dynamicHead s else arrowHead .~ noHead
 
--- | Removes indirect connections from the graph and produces a 'Diagram', using 'drawTreePartialOrder'' with the default drawing 'Settings' provided 'defaultTreeSettings'. 
+-- | Removes indirect connections from the graph and produces a <https://hackage.haskell.org/package/diagrams Diagram>, using 'drawTreePartialOrder'' with the default drawing 'Settings' provided 'defaultTreeSettings'. 
 -- Self-loops are not supported.
 drawTreePartialOrder :: (Show a, Eq a, Countable a) => Graph a -> Diagram B
 drawTreePartialOrder g = drawTreePartialOrder' (defaultTreeSettings g) drawDefaultNode g
 
-{-| Removes indirect connections from the graph and draws it using 'visualiseTree', producing a 'Diagram'.
+{-| Removes indirect connections from the graph and draws it using 'visualiseTree', producing a <https://hackage.haskell.org/package/diagrams Diagram>.
 Provides a parameter to supply an instance of the 'Settings' type that will give the drawing functions the graph visualisation settings.
 An example is the output of the 'defaultTreeSettings' function:
 @
@@ -224,7 +224,7 @@ drawTreePartialOrder' s drawF g = visualiseTree s nodes newConnections reduced
           reduced = reduction (connectedTo connections) []
           (ProcessedGraph nodes connections) = getVertices drawF g
 
--- | Draws the provided graph as a tree, producing a 'Diagram' using 'drawTree'', using the default settings. Self-loops are supported.
+-- | Draws the provided graph as a tree, producing a <https://hackage.haskell.org/package/diagrams Diagram> using 'drawTree'', using the default settings. Self-loops are supported.
 drawTree :: (Show a, Eq a, Countable a) => Graph a -> Diagram B
 drawTree g = drawTree' (defaultTreeSettings g) drawDefaultNode g
 

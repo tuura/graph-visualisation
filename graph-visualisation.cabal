@@ -10,9 +10,9 @@ description:         This <https://github.com/tuura/graph-visualisation library>
 homepage:            https://dev.sam.plus/graph-visualisation/docs
 license:             GPL-3
 license-file:        LICENSE
-author:              Sam Prescott
+author:              Samuel Prescott
 maintainer:          samprescott99@gmail.com
-copyright:           Sam Prescott 2018
+copyright:           Samuel Prescott 2018
 category:            Graphics
 build-type:          Simple
 extra-source-files:  ChangeLog.md, README.md

@@ -5,21 +5,21 @@
 -----------------------------------------------------------------------------
 -- |
 -- Module: Visualise.FlatCircle
--- Copyright : (c) Sam Prescott 2018
+-- Copyright : (c) Samuel Prescott 2018
 -- 
--- Draws a 'Graph' with each vertex at a vertex of a regular polygon with the
--- same number of sides as the 'Graph' does vertices.
+-- Draws a graph with each vertex at a vertex of a regular polygon with the
+-- same number of sides as the graph does vertices.
 --
--- Provides a function which draws the 'Graph' with default 'Settings', 
+-- Provides a function which draws the graph with default 'Settings', 
 -- 'drawFlatCircle', and a second function which draws the graph with custom
 -- 'Settings'.
 --
 -----------------------------------------------------------------------------
 module Visualise.FlatCircle (
-    -- * Draws a 'Graph' with default 'Settings'.
+    -- * Draws a graph with default 'Settings'.
     drawFlatCircle, 
 
-    -- * Draws a 'Graph' with customised 'Settings'.
+    -- * Draws a graph with customised 'Settings'.
     drawFlatCircle'
 ) where
 

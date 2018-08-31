@@ -11,13 +11,13 @@
 <a name="line-2"></a><span class='hs-comment'>-- |</span>
 <a name="line-3"></a><span class='hs-comment'>-- Module: Visualise</span>
 <a name="line-4"></a><span class='hs-comment'>-- Description : Provides a series of functions for drawing algebraic graphs.</span>
-<a name="line-5"></a><span class='hs-comment'>-- Copyright : (c) Sam Prescott 2018</span>
+<a name="line-5"></a><span class='hs-comment'>-- Copyright : (c) Samuel Prescott 2018</span>
 <a name="line-6"></a><span class='hs-comment'>-- </span>
 <a name="line-7"></a><span class='hs-comment'>-- Provides two graph drawing functions - 'drawGraph' and 'drawGraph'' - that</span>
 <a name="line-8"></a><span class='hs-comment'>-- can invoke various graph drawing functions depending on their 'Method' parameter.</span>
 <a name="line-9"></a><span class='hs-comment'>-- 'drawGraph' draws a graph with default settings whereas 'drawGraph'' can be</span>
-<a name="line-10"></a><span class='hs-comment'>-- provided with a 'Settings' parameter. The 'Graph' to be drawn is an instance</span>
-<a name="line-11"></a><span class='hs-comment'>-- of the type 'Graph' as defined by "Algebra.Graph".</span>
+<a name="line-10"></a><span class='hs-comment'>-- provided with a 'Settings' parameter. The graph to be drawn is an instance</span>
+<a name="line-11"></a><span class='hs-comment'>-- of the type graph as defined by "Algebra.Graph".</span>
 <a name="line-12"></a><span class='hs-comment'>-- </span>
 <a name="line-13"></a><span class='hs-comment'>-- The five graph drawing 'Method's defined for 'Method' can be used for both</span>
 <a name="line-14"></a><span class='hs-comment'>-- drawing functions, apart from 'ExpressionTree' which can only be used for</span>
@@ -33,66 +33,69 @@
 <a name="line-24"></a>    <span class='hs-comment'>-- * The constructors for the graph-drawing methods.</span>
 <a name="line-25"></a>    <span class='hs-conid'>Method</span><span class='hs-layout'>(</span><span class='hs-keyglyph'>..</span><span class='hs-layout'>)</span><span class='hs-layout'>,</span>
 <a name="line-26"></a>
-<a name="line-27"></a>    <span class='hs-comment'>-- * The two main graph drawing functions.</span>
-<a name="line-28"></a>    <span class='hs-varid'>drawGraph</span><span class='hs-layout'>,</span> <span class='hs-varid'>drawGraph'</span><span class='hs-layout'>,</span>
+<a name="line-27"></a>    <span class='hs-comment'>-- * The type used to represent the dimensions of an output &lt;https://hackage.haskell.org/package/diagrams Diagram&gt;, a tuple of Maybe Doubles.</span>
+<a name="line-28"></a>    <span class='hs-conid'>Dimensions</span><span class='hs-layout'>,</span>
 <a name="line-29"></a>
-<a name="line-30"></a>    <span class='hs-comment'>-- * The function for drawing with GraphViz, reexported from "Visualise.GraphViz".</span>
-<a name="line-31"></a>    <span class='hs-varid'>drawWithGraphViz</span><span class='hs-layout'>,</span>
+<a name="line-30"></a>    <span class='hs-comment'>-- * The two main graph drawing functions.</span>
+<a name="line-31"></a>    <span class='hs-varid'>drawGraph</span><span class='hs-layout'>,</span> <span class='hs-varid'>drawGraph'</span><span class='hs-layout'>,</span>
 <a name="line-32"></a>
-<a name="line-33"></a>    <span class='hs-comment'>-- * The functions for drawing an expression tree from a graph reexported from "Visualise.ExpressionTree". </span>
-<a name="line-34"></a>    <span class='hs-comment'>-- 'drawExpressionTree' can be used with 'drawGraph' and the 'Method' constructor but 'drawExpressionTree'' can't as it requires extra parameters.</span>
-<a name="line-35"></a>    <span class='hs-varid'>drawExpressionTree</span><span class='hs-layout'>,</span> <span class='hs-varid'>drawExpressionTree'</span><span class='hs-layout'>,</span>
-<a name="line-36"></a>
-<a name="line-37"></a>    <span class='hs-comment'>-- * Saves a 'Diagram' to to a specified SVG file with the specified 'Dimensions'.</span>
-<a name="line-38"></a>    <span class='hs-varid'>saveSVG</span>
-<a name="line-39"></a><span class='hs-layout'>)</span> <span class='hs-keyword'>where</span>
-<a name="line-40"></a>
-<a name="line-41"></a><span class='hs-keyword'>import</span> <span class='hs-conid'>Visualise</span><span class='hs-varop'>.</span><span class='hs-conid'>Common</span>
-<a name="line-42"></a><span class='hs-keyword'>import</span> <span class='hs-conid'>Visualise</span><span class='hs-varop'>.</span><span class='hs-conid'>Tree</span>
-<a name="line-43"></a><span class='hs-keyword'>import</span> <span class='hs-conid'>Visualise</span><span class='hs-varop'>.</span><span class='hs-conid'>FlatCircle</span>
-<a name="line-44"></a><span class='hs-keyword'>import</span> <span class='hs-conid'>Visualise</span><span class='hs-varop'>.</span><span class='hs-conid'>Hierarchical</span>
-<a name="line-45"></a><span class='hs-keyword'>import</span> <span class='hs-conid'>Visualise</span><span class='hs-varop'>.</span><span class='hs-conid'>FlatAdaptive</span>
-<a name="line-46"></a><span class='hs-keyword'>import</span> <span class='hs-conid'>Visualise</span><span class='hs-varop'>.</span><span class='hs-conid'>GraphViz</span>
-<a name="line-47"></a><span class='hs-keyword'>import</span> <span class='hs-conid'>Visualise</span><span class='hs-varop'>.</span><span class='hs-conid'>ExpressionTree</span>
-<a name="line-48"></a><span class='hs-keyword'>import</span> <span class='hs-conid'>Algebra</span><span class='hs-varop'>.</span><span class='hs-conid'>Graph</span>
-<a name="line-49"></a><span class='hs-keyword'>import</span> <span class='hs-conid'>Diagrams</span><span class='hs-varop'>.</span><span class='hs-conid'>Prelude</span>          <span class='hs-varid'>hiding</span> <span class='hs-layout'>(</span><span class='hs-conid'>Empty</span><span class='hs-layout'>)</span>
-<a name="line-50"></a><span class='hs-keyword'>import</span> <span class='hs-conid'>Diagrams</span><span class='hs-varop'>.</span><span class='hs-conid'>Backend</span><span class='hs-varop'>.</span><span class='hs-conid'>SVG</span>
-<a name="line-51"></a><span class='hs-keyword'>import</span> <span class='hs-conid'>Data</span><span class='hs-varop'>.</span><span class='hs-conid'>GraphViz</span><span class='hs-varop'>.</span><span class='hs-conid'>Commands</span>
-<a name="line-52"></a>
-<a name="line-53"></a><a name="Method"></a><span class='hs-comment'>-- | The graph drawing method</span>
-<a name="line-54"></a><a name="Method"></a><span class='hs-keyword'>data</span> <span class='hs-conid'>Method</span> <span class='hs-keyglyph'>=</span> <span class='hs-conid'>Tree</span>              <span class='hs-comment'>-- ^ The 'drawTree' function from "Visualise.Tree" module will be used to draw the graph.</span>
-<a name="line-55"></a>            <span class='hs-keyglyph'>|</span> <span class='hs-conid'>TreePartialOrder</span>  <span class='hs-comment'>-- ^ The 'drawTreePartialOrder' function "Visualise.Tree" module will be used to draw the graph, with all indirect dependencies removed by using the Coffman-Graham algorithm.</span>
-<a name="line-56"></a>            <span class='hs-keyglyph'>|</span> <span class='hs-conid'>Circle</span>            <span class='hs-comment'>-- ^ The "Visualise.FlatCircle" module will be used to draw the graph, with the verticies being placed on the vertecies of a regular polygon of n sides (where n is the number of graph vertices).</span>
-<a name="line-57"></a>            <span class='hs-keyglyph'>|</span> <span class='hs-conid'>Hierarchical</span>      <span class='hs-comment'>-- ^ The "Visualise.Hierarchical" module will be used to draw the graph as a hierarchical graph by grouping together vertices and groups of vertices with common connections.</span>
-<a name="line-58"></a>            <span class='hs-keyglyph'>|</span> <span class='hs-conid'>Adaptive</span>          <span class='hs-comment'>-- ^ The "Visualise.FlatAdaptive" module will be used to draw the graph, with the layout of vertices being dynamic depending on the connections between them.</span>
-<a name="line-59"></a>            <span class='hs-keyglyph'>|</span> <span class='hs-conid'>ExpressionTree</span>    <span class='hs-comment'>-- ^ The "Visualise.ExpressionTree" module will be used to draw an expression tree representation of the graph.</span>
-<a name="line-60"></a>
-<a name="line-61"></a><a name="Dimensions"></a><span class='hs-comment'>-- | The 'Dimensions' data type is used to store the dimensions for writing a 'Diagram' to a file. Either the width or height (or both) can be provided in a maybe tuple in the order (Width, Height).</span>
-<a name="line-62"></a><a name="Dimensions"></a><span class='hs-keyword'>type</span> <span class='hs-conid'>Dimensions</span> <span class='hs-keyglyph'>=</span> <span class='hs-layout'>(</span><span class='hs-conid'>Maybe</span> <span class='hs-conid'>Double</span><span class='hs-layout'>,</span> <span class='hs-conid'>Maybe</span> <span class='hs-conid'>Double</span><span class='hs-layout'>)</span>
+<a name="line-33"></a>    <span class='hs-comment'>-- * The function for drawing with GraphViz, reexported from "Visualise.GraphViz".</span>
+<a name="line-34"></a>    <span class='hs-varid'>drawWithGraphViz</span><span class='hs-layout'>,</span>
+<a name="line-35"></a>
+<a name="line-36"></a>    <span class='hs-comment'>-- * The functions for drawing an expression tree from a graph reexported from "Visualise.ExpressionTree". </span>
+<a name="line-37"></a>    <span class='hs-comment'>-- 'drawExpressionTree' can be used with 'drawGraph' and the 'Method' constructor but 'drawExpressionTree'' can't as it requires extra parameters.</span>
+<a name="line-38"></a>    <span class='hs-varid'>drawExpressionTree</span><span class='hs-layout'>,</span> <span class='hs-varid'>drawExpressionTree'</span><span class='hs-layout'>,</span>
+<a name="line-39"></a>
+<a name="line-40"></a>    <span class='hs-comment'>-- * Saves a &lt;https://hackage.haskell.org/package/diagrams Diagram&gt; to to a specified SVG file with the specified 'Dimensions'.</span>
+<a name="line-41"></a>    <span class='hs-varid'>saveSVG</span>
+<a name="line-42"></a><span class='hs-layout'>)</span> <span class='hs-keyword'>where</span>
+<a name="line-43"></a>
+<a name="line-44"></a><span class='hs-keyword'>import</span> <span class='hs-conid'>Visualise</span><span class='hs-varop'>.</span><span class='hs-conid'>Common</span>
+<a name="line-45"></a><span class='hs-keyword'>import</span> <span class='hs-conid'>Visualise</span><span class='hs-varop'>.</span><span class='hs-conid'>Tree</span>
+<a name="line-46"></a><span class='hs-keyword'>import</span> <span class='hs-conid'>Visualise</span><span class='hs-varop'>.</span><span class='hs-conid'>FlatCircle</span>
+<a name="line-47"></a><span class='hs-keyword'>import</span> <span class='hs-conid'>Visualise</span><span class='hs-varop'>.</span><span class='hs-conid'>Hierarchical</span>
+<a name="line-48"></a><span class='hs-keyword'>import</span> <span class='hs-conid'>Visualise</span><span class='hs-varop'>.</span><span class='hs-conid'>FlatAdaptive</span>
+<a name="line-49"></a><span class='hs-keyword'>import</span> <span class='hs-conid'>Visualise</span><span class='hs-varop'>.</span><span class='hs-conid'>GraphViz</span>
+<a name="line-50"></a><span class='hs-keyword'>import</span> <span class='hs-conid'>Visualise</span><span class='hs-varop'>.</span><span class='hs-conid'>ExpressionTree</span>
+<a name="line-51"></a><span class='hs-keyword'>import</span> <span class='hs-conid'>Algebra</span><span class='hs-varop'>.</span><span class='hs-conid'>Graph</span>
+<a name="line-52"></a><span class='hs-keyword'>import</span> <span class='hs-conid'>Diagrams</span><span class='hs-varop'>.</span><span class='hs-conid'>Prelude</span>          <span class='hs-varid'>hiding</span> <span class='hs-layout'>(</span><span class='hs-conid'>Empty</span><span class='hs-layout'>)</span>
+<a name="line-53"></a><span class='hs-keyword'>import</span> <span class='hs-conid'>Diagrams</span><span class='hs-varop'>.</span><span class='hs-conid'>Backend</span><span class='hs-varop'>.</span><span class='hs-conid'>SVG</span>
+<a name="line-54"></a><span class='hs-keyword'>import</span> <span class='hs-conid'>Data</span><span class='hs-varop'>.</span><span class='hs-conid'>GraphViz</span><span class='hs-varop'>.</span><span class='hs-conid'>Commands</span>
+<a name="line-55"></a>
+<a name="line-56"></a><a name="Method"></a><span class='hs-comment'>-- | The graph drawing method</span>
+<a name="line-57"></a><a name="Method"></a><span class='hs-keyword'>data</span> <span class='hs-conid'>Method</span> <span class='hs-keyglyph'>=</span> <span class='hs-conid'>Tree</span>              <span class='hs-comment'>-- ^ The 'drawTree' function from "Visualise.Tree" module will be used to draw the graph.</span>
+<a name="line-58"></a>            <span class='hs-keyglyph'>|</span> <span class='hs-conid'>TreePartialOrder</span>  <span class='hs-comment'>-- ^ The 'drawTreePartialOrder' function "Visualise.Tree" module will be used to draw the graph, with all indirect dependencies removed by using the Coffman-Graham algorithm.</span>
+<a name="line-59"></a>            <span class='hs-keyglyph'>|</span> <span class='hs-conid'>Circle</span>            <span class='hs-comment'>-- ^ The "Visualise.FlatCircle" module will be used to draw the graph, with the verticies being placed on the vertecies of a regular polygon of n sides (where n is the number of graph vertices).</span>
+<a name="line-60"></a>            <span class='hs-keyglyph'>|</span> <span class='hs-conid'>Hierarchical</span>      <span class='hs-comment'>-- ^ The "Visualise.Hierarchical" module will be used to draw the graph as a hierarchical graph by grouping together vertices and groups of vertices with common connections.</span>
+<a name="line-61"></a>            <span class='hs-keyglyph'>|</span> <span class='hs-conid'>Adaptive</span>          <span class='hs-comment'>-- ^ The "Visualise.FlatAdaptive" module will be used to draw the graph, with the layout of vertices being dynamic depending on the connections between them.</span>
+<a name="line-62"></a>            <span class='hs-keyglyph'>|</span> <span class='hs-conid'>ExpressionTree</span>    <span class='hs-comment'>-- ^ The "Visualise.ExpressionTree" module will be used to draw an expression tree representation of the graph.</span>
 <a name="line-63"></a>
-<a name="line-64"></a><a name="drawGraph"></a><span class='hs-comment'>-- | Draw a graph using the specified method, uses default settings.</span>
-<a name="line-65"></a><span class='hs-comment'>-- To draw a graph using "Visualise.GraphViz" or "Visualise.ExpressionTree", their own drawing functions must be used: for "Visualise.GraphViz" the function 'drawWithGraphViz' and for "Visualise.ExpressionTree" the function 'drawExpressionTree' or 'drawExpressionTree''.</span>
-<a name="line-66"></a><span class='hs-definition'>drawGraph</span> <span class='hs-keyglyph'>::</span> <span class='hs-layout'>(</span><span class='hs-conid'>Show</span> <span class='hs-varid'>a</span><span class='hs-layout'>,</span> <span class='hs-conid'>Eq</span> <span class='hs-varid'>a</span><span class='hs-layout'>,</span> <span class='hs-conid'>Countable</span> <span class='hs-varid'>a</span><span class='hs-layout'>)</span> <span class='hs-keyglyph'>=&gt;</span> <span class='hs-conid'>Method</span> <span class='hs-keyglyph'>-&gt;</span> <span class='hs-conid'>Graph</span> <span class='hs-varid'>a</span> <span class='hs-keyglyph'>-&gt;</span> <span class='hs-conid'>Diagram</span> <span class='hs-conid'>B</span>
-<a name="line-67"></a><span class='hs-definition'>drawGraph</span> <span class='hs-conid'>Tree</span> <span class='hs-keyglyph'>=</span> <span class='hs-varid'>drawTree</span>
-<a name="line-68"></a><span class='hs-definition'>drawGraph</span> <span class='hs-conid'>TreePartialOrder</span> <span class='hs-keyglyph'>=</span> <span class='hs-varid'>drawTreePartialOrder</span>
-<a name="line-69"></a><span class='hs-definition'>drawGraph</span> <span class='hs-conid'>Circle</span> <span class='hs-keyglyph'>=</span> <span class='hs-varid'>drawFlatCircle</span>
-<a name="line-70"></a><span class='hs-definition'>drawGraph</span> <span class='hs-conid'>Hierarchical</span> <span class='hs-keyglyph'>=</span> <span class='hs-varid'>drawHier</span>
-<a name="line-71"></a><span class='hs-definition'>drawGraph</span> <span class='hs-conid'>Adaptive</span> <span class='hs-keyglyph'>=</span> <span class='hs-varid'>drawFlatAdaptive</span>
-<a name="line-72"></a><span class='hs-definition'>drawGraph</span> <span class='hs-conid'>ExpressionTree</span> <span class='hs-keyglyph'>=</span> <span class='hs-varid'>drawExpressionTree</span>
-<a name="line-73"></a>
-<a name="line-74"></a><a name="drawGraph'"></a><span class='hs-comment'>-- | Draw a graph using the specified method, but also using the specified 'Settings'.</span>
-<a name="line-75"></a><span class='hs-definition'>drawGraph'</span> <span class='hs-keyglyph'>::</span> <span class='hs-layout'>(</span><span class='hs-conid'>Show</span> <span class='hs-varid'>a</span><span class='hs-layout'>,</span> <span class='hs-conid'>Eq</span> <span class='hs-varid'>a</span><span class='hs-layout'>,</span> <span class='hs-conid'>Countable</span> <span class='hs-varid'>a</span><span class='hs-layout'>)</span> <span class='hs-keyglyph'>=&gt;</span> <span class='hs-conid'>Method</span> <span class='hs-keyglyph'>-&gt;</span> <span class='hs-conid'>Settings</span> <span class='hs-keyglyph'>-&gt;</span> <span class='hs-layout'>(</span><span class='hs-varid'>a</span> <span class='hs-keyglyph'>-&gt;</span> <span class='hs-conid'>Diagram</span> <span class='hs-conid'>B</span><span class='hs-layout'>)</span> <span class='hs-keyglyph'>-&gt;</span> <span class='hs-conid'>Graph</span> <span class='hs-varid'>a</span> <span class='hs-keyglyph'>-&gt;</span> <span class='hs-conid'>Diagram</span> <span class='hs-conid'>B</span>
-<a name="line-76"></a><span class='hs-definition'>drawGraph'</span> <span class='hs-conid'>Tree</span> <span class='hs-keyglyph'>=</span> <span class='hs-varid'>drawTree'</span>
-<a name="line-77"></a><span class='hs-definition'>drawGraph'</span> <span class='hs-conid'>TreePartialOrder</span> <span class='hs-keyglyph'>=</span> <span class='hs-varid'>drawTreePartialOrder'</span>
-<a name="line-78"></a><span class='hs-definition'>drawGraph'</span> <span class='hs-conid'>Circle</span> <span class='hs-keyglyph'>=</span> <span class='hs-varid'>drawFlatCircle'</span>
-<a name="line-79"></a><span class='hs-definition'>drawGraph'</span> <span class='hs-conid'>Hierarchical</span> <span class='hs-keyglyph'>=</span> <span class='hs-varid'>drawHier'</span>
-<a name="line-80"></a><span class='hs-definition'>drawGraph'</span> <span class='hs-conid'>Adaptive</span> <span class='hs-keyglyph'>=</span> <span class='hs-varid'>drawFlatAdaptive'</span>
-<a name="line-81"></a>
-<a name="line-82"></a><a name="saveSVG"></a><span class='hs-comment'>-- | Saves a diagram to an SVG file at the specified 'FilePath', with the specified 'Dimensions'. Only one dimension is needed, they are given in the format:</span>
-<a name="line-83"></a><span class='hs-comment'>-- @</span>
-<a name="line-84"></a><span class='hs-comment'>-- (Maybe Double, Maybe Double)</span>
-<a name="line-85"></a><span class='hs-comment'>-- @</span>
-<a name="line-86"></a><span class='hs-definition'>saveSVG</span> <span class='hs-keyglyph'>::</span> <span class='hs-conid'>FilePath</span> <span class='hs-keyglyph'>-&gt;</span> <span class='hs-conid'>Dimensions</span> <span class='hs-keyglyph'>-&gt;</span> <span class='hs-conid'>Diagram</span> <span class='hs-conid'>B</span> <span class='hs-keyglyph'>-&gt;</span> <span class='hs-conid'>IO</span> <span class='hs-conid'>()</span>
-<a name="line-87"></a><span class='hs-definition'>saveSVG</span> <span class='hs-varid'>path</span> <span class='hs-layout'>(</span><span class='hs-varid'>w</span><span class='hs-layout'>,</span><span class='hs-varid'>h</span><span class='hs-layout'>)</span> <span class='hs-varid'>d</span> <span class='hs-keyglyph'>=</span> <span class='hs-varid'>renderSVG</span> <span class='hs-varid'>path</span> <span class='hs-layout'>(</span><span class='hs-varid'>mkSizeSpec2D</span> <span class='hs-varid'>w</span> <span class='hs-varid'>h</span><span class='hs-layout'>)</span> <span class='hs-varid'>d</span>
+<a name="line-64"></a><a name="Dimensions"></a><span class='hs-comment'>-- | The 'Dimensions' data type is used to store the dimensions for writing a &lt;https://hackage.haskell.org/package/diagrams Diagram&gt; to a file. Either the width or height (or both) can be provided in a maybe tuple in the order (Width, Height).</span>
+<a name="line-65"></a><a name="Dimensions"></a><span class='hs-keyword'>type</span> <span class='hs-conid'>Dimensions</span> <span class='hs-keyglyph'>=</span> <span class='hs-layout'>(</span><span class='hs-conid'>Maybe</span> <span class='hs-conid'>Double</span><span class='hs-layout'>,</span> <span class='hs-conid'>Maybe</span> <span class='hs-conid'>Double</span><span class='hs-layout'>)</span>
+<a name="line-66"></a>
+<a name="line-67"></a><a name="drawGraph"></a><span class='hs-comment'>-- | Draw a graph using the specified method, uses default settings.</span>
+<a name="line-68"></a><span class='hs-comment'>-- To draw a graph using "Visualise.GraphViz" or "Visualise.ExpressionTree", their own drawing functions must be used: for "Visualise.GraphViz" the function 'drawWithGraphViz' and for "Visualise.ExpressionTree" the function 'drawExpressionTree' or 'drawExpressionTree''.</span>
+<a name="line-69"></a><span class='hs-definition'>drawGraph</span> <span class='hs-keyglyph'>::</span> <span class='hs-layout'>(</span><span class='hs-conid'>Show</span> <span class='hs-varid'>a</span><span class='hs-layout'>,</span> <span class='hs-conid'>Eq</span> <span class='hs-varid'>a</span><span class='hs-layout'>,</span> <span class='hs-conid'>Countable</span> <span class='hs-varid'>a</span><span class='hs-layout'>)</span> <span class='hs-keyglyph'>=&gt;</span> <span class='hs-conid'>Method</span> <span class='hs-keyglyph'>-&gt;</span> <span class='hs-conid'>Graph</span> <span class='hs-varid'>a</span> <span class='hs-keyglyph'>-&gt;</span> <span class='hs-conid'>Diagram</span> <span class='hs-conid'>B</span>
+<a name="line-70"></a><span class='hs-definition'>drawGraph</span> <span class='hs-conid'>Tree</span> <span class='hs-keyglyph'>=</span> <span class='hs-varid'>drawTree</span>
+<a name="line-71"></a><span class='hs-definition'>drawGraph</span> <span class='hs-conid'>TreePartialOrder</span> <span class='hs-keyglyph'>=</span> <span class='hs-varid'>drawTreePartialOrder</span>
+<a name="line-72"></a><span class='hs-definition'>drawGraph</span> <span class='hs-conid'>Circle</span> <span class='hs-keyglyph'>=</span> <span class='hs-varid'>drawFlatCircle</span>
+<a name="line-73"></a><span class='hs-definition'>drawGraph</span> <span class='hs-conid'>Hierarchical</span> <span class='hs-keyglyph'>=</span> <span class='hs-varid'>drawHier</span>
+<a name="line-74"></a><span class='hs-definition'>drawGraph</span> <span class='hs-conid'>Adaptive</span> <span class='hs-keyglyph'>=</span> <span class='hs-varid'>drawFlatAdaptive</span>
+<a name="line-75"></a><span class='hs-definition'>drawGraph</span> <span class='hs-conid'>ExpressionTree</span> <span class='hs-keyglyph'>=</span> <span class='hs-varid'>drawExpressionTree</span>
+<a name="line-76"></a>
+<a name="line-77"></a><a name="drawGraph'"></a><span class='hs-comment'>-- | Draw a graph using the specified method, but also using the specified 'Settings'.</span>
+<a name="line-78"></a><span class='hs-definition'>drawGraph'</span> <span class='hs-keyglyph'>::</span> <span class='hs-layout'>(</span><span class='hs-conid'>Show</span> <span class='hs-varid'>a</span><span class='hs-layout'>,</span> <span class='hs-conid'>Eq</span> <span class='hs-varid'>a</span><span class='hs-layout'>,</span> <span class='hs-conid'>Countable</span> <span class='hs-varid'>a</span><span class='hs-layout'>)</span> <span class='hs-keyglyph'>=&gt;</span> <span class='hs-conid'>Method</span> <span class='hs-keyglyph'>-&gt;</span> <span class='hs-conid'>Settings</span> <span class='hs-keyglyph'>-&gt;</span> <span class='hs-layout'>(</span><span class='hs-varid'>a</span> <span class='hs-keyglyph'>-&gt;</span> <span class='hs-conid'>Diagram</span> <span class='hs-conid'>B</span><span class='hs-layout'>)</span> <span class='hs-keyglyph'>-&gt;</span> <span class='hs-conid'>Graph</span> <span class='hs-varid'>a</span> <span class='hs-keyglyph'>-&gt;</span> <span class='hs-conid'>Diagram</span> <span class='hs-conid'>B</span>
+<a name="line-79"></a><span class='hs-definition'>drawGraph'</span> <span class='hs-conid'>Tree</span> <span class='hs-keyglyph'>=</span> <span class='hs-varid'>drawTree'</span>
+<a name="line-80"></a><span class='hs-definition'>drawGraph'</span> <span class='hs-conid'>TreePartialOrder</span> <span class='hs-keyglyph'>=</span> <span class='hs-varid'>drawTreePartialOrder'</span>
+<a name="line-81"></a><span class='hs-definition'>drawGraph'</span> <span class='hs-conid'>Circle</span> <span class='hs-keyglyph'>=</span> <span class='hs-varid'>drawFlatCircle'</span>
+<a name="line-82"></a><span class='hs-definition'>drawGraph'</span> <span class='hs-conid'>Hierarchical</span> <span class='hs-keyglyph'>=</span> <span class='hs-varid'>drawHier'</span>
+<a name="line-83"></a><span class='hs-definition'>drawGraph'</span> <span class='hs-conid'>Adaptive</span> <span class='hs-keyglyph'>=</span> <span class='hs-varid'>drawFlatAdaptive'</span>
+<a name="line-84"></a>
+<a name="line-85"></a><a name="saveSVG"></a><span class='hs-comment'>-- | Saves a diagram to an SVG file at the specified 'FilePath', with the specified 'Dimensions'. Only one dimension is needed, they are given in the format:</span>
+<a name="line-86"></a><span class='hs-comment'>-- @</span>
+<a name="line-87"></a><span class='hs-comment'>-- (Maybe Double, Maybe Double)</span>
+<a name="line-88"></a><span class='hs-comment'>-- @</span>
+<a name="line-89"></a><span class='hs-definition'>saveSVG</span> <span class='hs-keyglyph'>::</span> <span class='hs-conid'>FilePath</span> <span class='hs-keyglyph'>-&gt;</span> <span class='hs-conid'>Dimensions</span> <span class='hs-keyglyph'>-&gt;</span> <span class='hs-conid'>Diagram</span> <span class='hs-conid'>B</span> <span class='hs-keyglyph'>-&gt;</span> <span class='hs-conid'>IO</span> <span class='hs-conid'>()</span>
+<a name="line-90"></a><span class='hs-definition'>saveSVG</span> <span class='hs-varid'>path</span> <span class='hs-layout'>(</span><span class='hs-varid'>w</span><span class='hs-layout'>,</span><span class='hs-varid'>h</span><span class='hs-layout'>)</span> <span class='hs-varid'>d</span> <span class='hs-keyglyph'>=</span> <span class='hs-varid'>renderSVG</span> <span class='hs-varid'>path</span> <span class='hs-layout'>(</span><span class='hs-varid'>mkSizeSpec2D</span> <span class='hs-varid'>w</span> <span class='hs-varid'>h</span><span class='hs-layout'>)</span> <span class='hs-varid'>d</span>
 </pre></body>
 </html>

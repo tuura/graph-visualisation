@@ -6,44 +6,47 @@
 -----------------------------------------------------------------------------
 -- |
 -- Module: Visualise.Common
--- Copyright : (c) Sam Prescott 2018
+-- Copyright : (c) Samuel Prescott 2018
 -- 
 -- Provides common types, typeclasses and functions used by the various drawing
 -- modules.
 --
 -----------------------------------------------------------------------------
 module Visualise.Common (
-    -- * The 'Settings' type used by most drawing modules to customise the drawing of a 'Graph'.
+    -- * The 'Settings' type used by most drawing modules to customise the drawing of a graph.
     Settings(..), 
 
-    -- * The 'Node' type which is used by the drawing modules to represent a vertex, containing a 'String' representation and a 'Diagram' representation.
+    -- * The 'Node' type which is used by the drawing modules to represent a vertex, containing a 'String' representation and a <https://hackage.haskell.org/package/diagrams Diagram> representation.
     Node(..), 
 
-    -- * The 'ProcessedGraph' type which is used by 'getVertices' to represent a 'Graph' that has been folded through, with a list of vertices and a list of conenctions.
+    -- * The 'ProcessedGraph' type which is used by 'getVertices' to represent a graph that has been folded through, with a list of vertices and a list of conenctions.
     ProcessedGraph(..), 
 
-    -- * The 'Boolean' type 'Directed' which determines whether a 'Graph' is directed/has arrows on connections.
+    -- * The 'Boolean' type 'Directed' which determines whether a graph is directed/has arrows on connections.
     Directed(..),
 
-    -- * An array of tuples representing connections in a 'Graph'.
+    -- * An array of tuples representing connections in a graph.
     ConnectList,
 
     -- * The 'Draw' TypeClass which determines how to draw a 'Node' using the function 'draw'.
     Draw, draw,
 
-    -- * The 'Countable' TypeClass which determines how to count the number of vertices in a 'Graph'/'Graph' of 'Graph's using the function 'count'.
+    -- * The 'Countable' TypeClass which determines how to count the number of vertices in a graph/graph of graphs using the function 'count'.
     Countable, count,
 
-    -- * The default 'Vertex'-drawing functions.
+    -- * The default vertex-drawing functions.
     drawDefaultNode, drawDefaultNodeWithSize, drawDefaultEmptyNode, drawNodeWithEmptyFlag,
 
-    -- * Gets a 'ProcessedGraph' containing a 'Graph''s vertices and connections.
+    -- * Gets a 'ProcessedGraph' containing a graph's vertices and connections, a wrapper for 'namesAndConnections'.
     getVertices, 
 
-    -- * Gets the vertices connected from and to a specified 'Vertex'.
+    -- * Gets a 'ProcessedGraph' containing a graph's vertices and connections, recursive requiring a counter string.
+    namesAndConnections, 
+
+    -- * Gets the vertices connected from and to a specified vertex.
     connectedFrom, connectedTo, 
 
-    -- * Used to adapt 'Graph'-drawing parameters in accordance with the size of a graph.
+    -- * Used to adapt graph-drawing parameters in accordance with the size of a graph.
     dynamicStyle
 ) where
 
@@ -88,7 +91,7 @@ data Settings =
            , initPos :: Maybe Int
            }
 
--- | The 'Node' data type represents a node/'Vertex' on a graph, storing the node's String name and its corrisponding diagram from the "Diagrams" library.
+-- | The 'Node' data type represents a node/vertex on a graph, storing the node's String name and its corrisponding diagram from the "Diagrams" library.
 data Node = 
   Node { -- | Use 'name' to get the String representation of a node.
          name :: String
@@ -96,7 +99,7 @@ data Node =
        , diag :: Diagram B
        }
 
--- | The 'ProcessedGraph' data type contains a list of a 'Graph''s nodes along with the connections between them in a list of tuples.
+-- | The 'ProcessedGraph' data type contains a list of a graph's nodes along with the connections between them in a list of tuples.
 data ProcessedGraph = ProcessedGraph [Node] [(Node, Node)] deriving (Show)
 
 -- | The 'Directed' data type is a boolean type which is used to determine if a graph is a directed or undiercted graph.
@@ -107,7 +110,7 @@ type ConnectList a = [(a,[a])]
 
 -- | The TypeClass 'Draw' is used to determine whether a value can be drawn, this is used for vertices as these must be able to be drawn.
 class Draw a where
-    -- | The draw function produces a 'Diagram' from the drawable value.
+    -- | The draw function produces a <https://hackage.haskell.org/package/diagrams Diagram> from the drawable value.
     draw :: a -> Diagram B
 
 -- | The type 'Node' is an instance of the 'Draw' class as it can be drawn.
@@ -167,7 +170,7 @@ drawDefaultNodeWithSize :: (Show a) => Double -> a -> Diagram B
 drawDefaultNodeWithSize s nn = (text n # fontSizeL s <> drawDefaultEmptyNode s) # href ("javascript:alert(\"Node " ++ n ++ "\")")
     where n = show nn
 
--- | The default circle 'Diagram' for an empty node of the size provided.
+-- | The default circle <https://hackage.haskell.org/package/diagrams Diagram> for an empty node of the size provided.
 drawDefaultEmptyNode :: Double -> Diagram B
 drawDefaultEmptyNode = circle
 
@@ -178,7 +181,7 @@ drawNodeWithEmptyFlag (n,f) = let txt = if f then "" else show n
                               in (text txt # fontSizeL 0.1 <> circle 0.1) # href ("javascript:alert(\"Node " ++ txt ++ "\")")
 
 -- | Produces a value of the type 'Node'. The corrisponding diagram for the node is proudced by the @ (a -> Diagram B) @ function if the value contained in the 'Either' parameter is the 'Right' 'a' value.
--- The 'Either' parameter is 'Left' if the 'Node' is an 'Empty' node meaning that the 'Node''s name is the value of the 'c' accumulator from 'namesAndConnections' and its 'Diagram' should be a blank node.
+-- The 'Either' parameter is 'Left' if the 'Node' is an <https://hackage.haskell.org/package/algebraic-graphs-0.1.1.1/docs/Algebra-Graph.html#t:Graph Empty> node meaning that the 'Node''s name is the value of the 'c' accumulator from 'namesAndConnections' and its <https://hackage.haskell.org/package/diagrams Diagram> should be a blank node.
 -- If the 'Either' parameter is instead 'Right', the 'Node''s 'name' is be produced using 'show' on the provided value and the associated diagram is produced from applying the provided Right value to the provided function.
 getNode :: (Show a) => (a -> Diagram B) -> Either String a -> Node
 getNode drawF x
@@ -186,15 +189,15 @@ getNode drawF x
     | otherwise = Node (fromLeft "" x) (drawDefaultEmptyNode 0.1 # named (fromLeft "" x))
 
 -- | Essentially a wrapper for the recursive 'namesAndConnections' function. Takes a Diagram-producing function and a Graph of the same type the Diagram function takes and then produces a 'ProcessedGraph' containign all the vertices (their names and diagrams) and connections of the original graph.
-getVertices :: (Eq a, Show a) => (a -> Diagram B)   -- ^ A function that takes a vertex of the 'Graph' of type 'a' and produces a 'Diagram' from it.
-                              -> Graph a            -- ^ The 'Graph' to be folded through.
+getVertices :: (Eq a, Show a) => (a -> Diagram B)   -- ^ A function that takes a vertex of the graph of type 'a' and produces a <https://hackage.haskell.org/package/diagrams Diagram> from it.
+                              -> Graph a            -- ^ The graph to be folded through.
                               -> ProcessedGraph     -- ^ Contains the produced 'Node''s and connections.
 getVertices drawF g = namesAndConnections drawF g ""
 
--- | Recursively goes through the provided graph. Produces a list of 'Node''s (so the 'name' and associated 'Diagram' for each 'Vertex') and a list of connections between them.
-namesAndConnections :: (Eq a, Show a) => (a -> Diagram B)   -- ^ A function that takes a vertex of the 'Graph' of type 'a' and produces a 'Diagram' from it.
-                                      -> Graph a            -- ^ The 'Graph' to be folded through.
-                                      -> String             -- ^ An accumulator used to produce identifiers for 'Empty' vertices, each iteration an 'l' or 'r' is prepended.
+-- | Recursively goes through the provided graph. Produces a list of 'Node''s (so the 'name' and associated <https://hackage.haskell.org/package/diagrams Diagram> for each vertex) and a list of connections between them.
+namesAndConnections :: (Eq a, Show a) => (a -> Diagram B)   -- ^ A function that takes a vertex of the graph of type 'a' and produces a <https://hackage.haskell.org/package/diagrams Diagram> from it.
+                                      -> Graph a            -- ^ The graph to be folded through.
+                                      -> String             -- ^ An accumulator used to produce identifiers for <https://hackage.haskell.org/package/algebraic-graphs-0.1.1.1/docs/Algebra-Graph.html#t:Graph Empty> vertices, each iteration an 'l' or 'r' is prepended.
                                       -> ProcessedGraph     -- ^ Contains the produced 'Node''s and connections.
 namesAndConnections drawF Empty c = ProcessedGraph [getNode drawF (Left ("_empty_node_" ++ c))] []
 namesAndConnections drawF v@(Vertex a) c = ProcessedGraph [getNode drawF (Right a)] []
@@ -206,7 +209,7 @@ namesAndConnections drawF (Connect a b) c = ProcessedGraph (nA `union` nB) ([(aA
           (ProcessedGraph nB cB) = namesAndConnections drawF b ('r' : c)
 
 -- | Takes a list of connections and produces a corrisponding adjacency list (so tuples of a vertex and a list of vertices dependant on it) by using folds and recursion.
-connectedTo :: (Eq a) => [(a,a)]        -- ^ A list of tuples where the first tuple element and second tuple element are used to corrispond to the 'Vertex' at the tail of the conenction and at the head of connection respectively.
+connectedTo :: (Eq a) => [(a,a)]        -- ^ A list of tuples where the first tuple element and second tuple element are used to corrispond to the vertex at the tail of the conenction and at the head of connection respectively.
                       -> ConnectList a  -- ^ The corrisponding adjacency list to the list of the connections.
 connectedTo [] = []
 connectedTo [(a,b),(x,y)]
@@ -228,7 +231,7 @@ connectedFrom l@((x,y):zs) = (y,incoming) : if not (null remaining) then connect
           incoming = foldr (\(a,b) acc -> a : acc) [] filtered
           filtered = filter (\(a,b) -> b == y) l
 
--- | Used to produce a measurement for the size of 'Diagram' properties from a default measurement and the size of a graph as an 'Integer'.
+-- | Used to produce a measurement for the size of <https://hackage.haskell.org/package/diagrams Diagram> properties from a default measurement and the size of a graph as an 'Integer'.
 -- Multiplies the default value by 10 and divides this new value by the size of the graph.
 dynamicStyle :: Measure Double -> Int -> Measure Double
 dynamicStyle def graphSize = def * 10/fromIntegral graphSize
