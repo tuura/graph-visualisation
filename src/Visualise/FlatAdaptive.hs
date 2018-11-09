@@ -81,12 +81,12 @@ makeGroup d c others = withNames (show <$> others) (\otherSubs d -> withNames (s
           
 -- | Connects the two specified vertices with an arrow. If the two vertex names are the same then a self-loop is drawn with alternate settings.
 -- The 'Settings' provided determine the properties of the connections, e.g. shaft thickness, arrow head size or even if there is an arrow head at all (there won't be if the graph is 'Undirected').
-drawArrow :: (Show a, Eq a) => Settings -> a -> a -> Diagram B -> Diagram B
+drawArrow :: (Show b, Eq b) => Settings a -> b -> b -> Diagram B -> Diagram B
 drawArrow s a b d
     | a == b = connectPerim' arrowOpts2 (show a) (show b) (0 @@ turn) (-1/2 @@ turn) d
     | otherwise = connectOutside' arrowOpts1 (show a) (show b) d
-    where arrowOpts1 = with & shaftStyle %~ lw (dynamicThick s) & if directed s == Directed then headLength .~ dynamicHead s else arrowHead .~ noHead
-          arrowOpts2 = with & shaftStyle %~ lw (dynamicThick s) & arrowShaft .~ arc xDir (4/6 @@ turn) & if directed s == Directed then headLength .~ dynamicHead s else arrowHead .~ noHead
+    where arrowOpts1 = with & shaftStyle %~ lw (s ^. dynamicThick) & if (s ^. directed) == Directed then headLength .~ (s ^. dynamicHead) else arrowHead .~ noHead
+          arrowOpts2 = with & shaftStyle %~ lw (s ^. dynamicThick) & arrowShaft .~ arc xDir (4/6 @@ turn) & if (s ^. directed) == Directed then headLength .~ (s ^. dynamicHead) else arrowHead .~ noHead
 
 -- | Produces a <https://hackage.haskell.org/package/diagrams Diagram> of all the graph's vertices to be used as a basis for grouping together vertices. Has variations that can be chosen with the 'initPos' in the 'Settings' used.
 initialPositions :: (Draw a) => Int        -- ^ Corrisponds to which intial layout function will be used, best to use trial-and-error on a per-graph basis.
@@ -113,32 +113,21 @@ listConnectedOnly = nub . foldr (\(a,b) acc -> a : b : acc) []
 
 -- | Uses 'drawFlatAdaptive'' with default 'Settings' provided by 'defaultAdaptiveSettings'.
 drawFlatAdaptive :: (Show a, Eq a, Countable a) => Graph a -> Diagram B
-drawFlatAdaptive g = drawFlatAdaptive' (defaultAdaptiveSettings g) drawDefaultNode g
+drawFlatAdaptive g = drawFlatAdaptive' (defaultAdaptiveSettings g) g
 
 -- | Draws a flat graph with an adaptive layout.
-drawFlatAdaptive' :: (Show a, Eq a) => Settings -> (a -> Diagram B) -> Graph a -> Diagram B
-drawFlatAdaptive' s drawF g = outDiag <> boundingRect outDiag
+drawFlatAdaptive' :: (Show a, Eq a) => Settings a -> Graph a -> Diagram B
+drawFlatAdaptive' s g = outDiag <> boundingRect outDiag
     where outDiag = (foldr (\(a,b) acc -> drawArrow s a b acc) beforeArrowsDiag connections) # frame 0.1
           beforeArrowsDiag = overlayedDiagram ||| strutX 0.1 ||| connectedDiagram
           overlayedDiagram = overlayedOnlyDiagram (nodes \\ connectedNodes)
-          connectedDiagram = connectedOnlyDiagram connectedNodes connections . initialPositions (fromJust . initPos $ s) $ connectedNodes
+          connectedDiagram = connectedOnlyDiagram connectedNodes connections . initialPositions (fromJust $ s ^. initPos) $ connectedNodes
           connectedNodes = listConnectedOnly connections
-          (ProcessedGraph nodes connections) = getVertices drawF g
+          (ProcessedGraph nodes connections) = getVertices (s ^. nodeDrawFunction) g
+
 
 -- | The default 'Settings' function for graphs generated with "Visualise.FlatAdaptive".
-defaultAdaptiveSettings :: (Countable a) => Graph a -> Settings
-defaultAdaptiveSettings g = Settings (dynamicStyle small $ count g) 
-                                     (dynamicStyle thin $ count g)
-                                     Directed
-                                     Nothing
-                                     Nothing
-                                     Nothing
-                                     Nothing
-                                     Nothing
-                                     Nothing
-                                     (Just 1)
-
--- inputTestData = Connect (Connect (Vertex "a") (Overlay (Vertex "b") (Vertex "c"))) (Connect (Vertex "d") (Vertex "e"))
--- inputTestData = (Overlay (Connect (Connect (Connect (Vertex 1) (Connect (Vertex 2) (Vertex 3))) (Vertex 4)) (Overlay (Overlay (Overlay (Vertex 5) (Vertex 6)) (Connect (Connect (Vertex 7) (Connect (Overlay (Connect (Overlay (Connect (Vertex 8) (Connect (Vertex 9) (Vertex 10))) (Vertex 11)) (Vertex 12)) (Vertex 13)) (Vertex 14))) (Vertex 15))) (Overlay (Vertex 16) (Connect (Overlay (Connect (Vertex 17) (Connect (Overlay (Vertex 18) (Vertex 19)) (Vertex 20))) (Vertex 21)) (Overlay (Overlay (Overlay (Vertex 22) (Vertex 23)) (Connect (Connect (Vertex 24) (Vertex 25)) (Vertex 26))) (Vertex 27)))))) (Vertex 28))
--- inputTestData = (Connect (Vertex 2) (Overlay (Connect (Vertex 5) (Connect (Vertex 4) (Overlay (Vertex 8) (Connect (Connect (Vertex 12) (Connect (Vertex 6) (Vertex 4))) (Overlay (Connect (Vertex 14) (Connect (Vertex 6) (Connect (Vertex 11) (Vertex 11)))) (Vertex 2)))))) (Overlay (Vertex 9) (Overlay (Vertex 22) (Connect (Vertex 11) (Overlay (Vertex 2) (Connect (Overlay (Connect (Overlay (Vertex 1) (Vertex 8)) (Connect (Vertex 33) (Vertex 9))) (Connect (Vertex 39) (Vertex 30))) (Connect (Vertex 27) (Vertex 29)))))))))
-inputTestData = (Overlay (Vertex 50) (Overlay (Connect (Vertex 5) (Connect (Vertex 4) (Overlay (Vertex 8) (Connect (Connect (Vertex 12) (Connect (Vertex 6) (Vertex 4))) (Overlay (Connect (Vertex 14) (Connect (Vertex 6) (Connect (Vertex 11) (Vertex 11)))) (Vertex 2)))))) (Overlay (Vertex 9) (Overlay (Vertex 22) (Connect (Vertex 11) (Overlay (Vertex 2) (Connect (Overlay (Connect (Overlay (Vertex 1) (Vertex 8)) (Connect (Vertex 33) (Vertex 9))) (Connect (Vertex 39) (Vertex 30))) (Connect (Vertex 27) (Vertex 29)))))))))
+defaultAdaptiveSettings :: (Countable a, Show a) => Graph a -> Settings a
+defaultAdaptiveSettings g = with & dynamicHead .~ (dynamicStyle small $ count g) 
+                                 & dynamicThick .~ (dynamicStyle thin $ count g)
+                                 & initPos .~ Just 1

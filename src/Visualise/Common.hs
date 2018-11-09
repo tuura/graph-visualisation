@@ -3,6 +3,8 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE TemplateHaskell #-}
+
 -----------------------------------------------------------------------------
 -- |
 -- Module: Visualise.Common
@@ -47,7 +49,20 @@ module Visualise.Common (
     connectedFrom, connectedTo, 
 
     -- * Used to adapt graph-drawing parameters in accordance with the size of a graph.
-    dynamicStyle
+    dynamicStyle,
+
+    -- * The Lens setter functions to modify their corresponding 'Settings' fields.
+      nodeDrawFunction
+    , dynamicHead
+    , dynamicThick
+    , directed
+    , horizontalOrientation
+    , layerSpacing
+    , nodeSpacing
+    , graphPadding
+    , colF
+    , bgOp
+    , initPos
 ) where
 
 import Algebra.Graph
@@ -56,40 +71,105 @@ import Diagrams.Backend.SVG
 import Data.List
 import Data.Either
 import Data.Maybe
+-- import Control.Lens         (Lens', Setter)
 
--- | The 'Settings' data type contains various fields for the graph drawing methods, some common between them and some specialised to a single method.
--- To give custom settings to the 'drawGraph'' function, a function which takes a graph as an argument and returns a 'Settings' instance will be given to it.
-data Settings = 
-  Settings { -- | The size of the arrow heads for the graph drawing, useful to scale with graph size. 
+
+-- | The 'Settings' data type contains various fields for the graph drawing methods, some common between them and some specialised to a single method. Specialised fields use 'Maybe'.
+-- The 'Control.Lens' library is used to enable easy access to and modification of these fields using getters and setters.
+-- To access a field the generated Lens getter functions can be used in conjunction with the inline get function (^.). For example the following test function gets the '_directed' field:
+--
+-- @
+--     getDirectedTest :: Setting a -> Directed
+--     getDirectedTest s = s ^. directed
+-- @
+--
+-- And to set a value in an instance of 'Settings', Lens' setter functions can be used in combination with the inline set function (.~) as shown in the following test function:
+-- (Where (&) is a reverse application operator as defined by Lens and 'with' is a synonym for 'def' to get the default 'Settings' value)
+--
+-- @
+--     setSettingsTest :: Setting a
+--     setSettingsTest = with & directed .~ Directed
+--                            & initPos .~ Just 2
+-- @
+-- 
+-- This function uses a default 'Settings' instance and sets the values of the '_directed' and '_initPos' fields.
+-- To set the node-drawing function to a custom function, the -XScopedTypeVariables language extension must be used due to Haskell's polymorphism. 
+-- For example to use the 'drawDefaultHierNode' function as the drawing function, the following function could be used:
+--
+-- @
+--     testSetNodeDrawFunction :: (Countable a, Show a) => Graph a -> Settings a
+--     testSetNodeDrawFunction g = (with :: (Show a) => Settings a) & (nodeDrawFunction .~ drawDefaultHierNode :: (Show a) => Settings a -> Settings a)
+-- @
+--
+-- If the type definitions are not present there will be ambiguous types.
+--
+-- Each standard graph-drawing function in the library provides at least one default settings function providing a recommended set of default 'Settings' to be used.
+data Settings a = 
+  Settings { _nodeDrawFunction :: a -> Diagram B
+
+             -- | The size of the arrow heads for the graph drawing, useful to scale with graph size. 
              -- The default implementation for each of the drawing methods is similar, being based on:
              -- @
              -- dynamicStyle small $ count g
              -- @
              -- With 'normal' being used in place of 'small' for some methods.
-             dynamicHead :: Measure Double
+           , _dynamicHead :: Measure Double
              -- | The thickness of the arrow shafts for the graph drawing, again useful to scale like 'dynamicHead' like so:
              -- @
              -- dynamicStyle thin $ count g
              -- @
-           , dynamicThick :: Measure Double
+           , _dynamicThick :: Measure Double
              -- | Whether the graph is 'Directed' (arrows on the connections between nodes). The type 'Directed' is a boolean value that can either be 'Directed' or 'Undirected'.
-           , directed :: Directed
+           , _directed :: Directed
              -- | The orientation of the graph when using the "Visualise.Tree" module's functions.
-           , horizontalOrientation :: Maybe Bool
+           , _horizontalOrientation :: Maybe Bool
              -- | The spacing between layers when using the "Visualise.Tree" module's functions.
-           , layerSpacing :: Maybe Double
+           , _layerSpacing :: Maybe Double
              -- | The spacing between vertices when using the "Visualise.Tree" module's functions.
-           , nodeSpacing :: Maybe Double
+           , _nodeSpacing :: Maybe Double
              -- | The padding around the graph when using the "Visualise.Tree" module's functions.
-           , graphPadding :: Maybe Double
+           , _graphPadding :: Maybe Double
              -- | The background colour of groups when using the "Visualise.Hierarchical" module.
-           , colF :: Maybe (Int -> Colour Double)
+           , _colF :: Maybe (Int -> Colour Double)
              -- | The background opacity of groups when using the "Visualise.Hierarchical" module.
-           , bgOp :: Maybe Double
+           , _bgOp :: Maybe Double
              -- | The mode of initial positioning for the vertices when using "Visualise.FlatAdaptive", changing this results in differently layed out graphs. 
              -- Useful to experiment with to best display a graph.
-           , initPos :: Maybe Int
-           }
+           , _initPos :: Maybe Int
+          }
+
+-- | Provides a set of default values a 'Settings' instance.
+-- By default these are used:
+--
+-- @
+--     _nodeDrawFunction = drawDefaultNode,
+--     _dynamicHead = small,
+--     _dynamicThick = thin,
+--     _directed = Directed,
+--     _horizontalOrientation = Nothing,
+--     _layerSpacing = Nothing,
+--     _nodeSpacing = Nothing,
+--     _graphPadding = Nothing,
+--     _colF = Nothing,
+--     _bgOp = Nothing,
+--     _initPos = Nothing
+-- @
+--
+-- These defaults are then customised by the various default settings methods in the drawing modules.
+instance (Show a) => Default (Settings a) where
+  def = Settings {
+             _nodeDrawFunction = drawDefaultNode
+           , _dynamicHead = small
+           , _dynamicThick = thin
+           , _directed = Directed
+           , _horizontalOrientation = Nothing
+           , _layerSpacing = Nothing
+           , _nodeSpacing = Nothing
+           , _graphPadding = Nothing
+           , _colF = Nothing
+           , _bgOp = Nothing
+           , _initPos = Nothing
+          }
 
 -- | The 'Node' data type represents a node/vertex on a graph, storing the node's String name and its corrisponding diagram from the "Diagrams" library.
 data Node = 
@@ -115,7 +195,7 @@ class Draw a where
 
 -- | The type 'Node' is an instance of the 'Draw' class as it can be drawn.
 instance Draw Node where
-    -- | The diagram is extracted from the 'Node'
+    -- | The diagram is extracted from the 'Node'.
     draw (Node _ d) = d
 
 -- | The TypeClass 'Countable' is used to determine if a type can be counted when counting the number of vertices in a graph/more specificaly a nested graph.
@@ -235,3 +315,6 @@ connectedFrom l@((x,y):zs) = (y,incoming) : if not (null remaining) then connect
 -- Multiplies the default value by 10 and divides this new value by the size of the graph.
 dynamicStyle :: Measure Double -> Int -> Measure Double
 dynamicStyle def graphSize = def * 10/fromIntegral graphSize
+
+-- Uses TemplateHaskell to create lenses for each 'Settings' field using the Control.Lens library.
+makeLenses ''Settings

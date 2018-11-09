@@ -38,17 +38,9 @@ class Draw a where
 -- | Defines how graphs of graphs can be drawn
 instance (Show a, Draw a, Eq a, Countable a) => Draw (Graph a) where
     -- | Uses the "Visualise.Tree" module (with the specified settings) to draw each vertex that contains a graph.
-    draw dir g = drawTree' (Settings (dynamicStyle small $ count g) 
-                                     (dynamicStyle thin $ count g) 
-                                     dir 
-                                     (Just False)
-                                     (Just 0.2) 
-                                     (Just 10) 
-                                     (Just 5) 
-                                     Nothing 
-                                     Nothing
-                                     Nothing
-                            ) (draw dir) g
+    draw dir g = drawTree' (defaultTreeSettings g & nodeDrawFunction .~ (draw dir) 
+                                                  & directed .~ dir) g
+
 -- | Defines how to draw a vertex that has the type of 'String'.
 instance Draw String where
     -- | Uses the 'drawGVNode' to draw the vertex, ignoring the 'Directed' parameter.

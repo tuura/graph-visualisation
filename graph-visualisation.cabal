@@ -2,7 +2,7 @@
 -- documentation, see http://haskell.org/cabal/users-guide/
 
 name:                graph-visualisation
-version:             0.1.0.0
+version:             0.1.0.1
 synopsis:            Provides a series of graph-drawing functions for use with the algebraic-graphs library.
 description:         This <https://github.com/tuura/graph-visualisation library> works with the <https://hackage.haskell.org/package/algebraic-graphs algebraic-graphs> library to visualise graphs.
 					 Different visualisation methods are included, each in their own module. However, the top-level module <Visualise.html Visualise> provides the main drawing functions /drawGraph/ and /drawGraph'/ along with re-exporting funtions from the <Visualise-GraphViz.html Visualise.GraphViz> module (which uses the renowned <http://hackage.haskell.org/package/graphviz GraphViz library> to help visualise graphs and therefore requires more specialised functions) and the <Visualise-ExpressionTree.html Visualise.ExpressionTree> module (whos customisable function requires extra parameters compared to the other modules).

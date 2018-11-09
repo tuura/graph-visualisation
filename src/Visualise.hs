@@ -64,7 +64,7 @@ data Method = Tree              -- ^ The 'drawTree' function from "Visualise.Tre
 -- | The 'Dimensions' data type is used to store the dimensions for writing a <https://hackage.haskell.org/package/diagrams Diagram> to a file. Either the width or height (or both) can be provided in a maybe tuple in the order (Width, Height).
 type Dimensions = (Maybe Double, Maybe Double)
 
--- | Draw a graph using the specified method, uses default settings.
+-- | Draw a graph using the specified 'Method', uses the default 'Settings' for the specified drawing 'Method'.
 -- To draw a graph using "Visualise.GraphViz" or "Visualise.ExpressionTree", their own drawing functions must be used: for "Visualise.GraphViz" the function 'drawWithGraphViz' and for "Visualise.ExpressionTree" the function 'drawExpressionTree' or 'drawExpressionTree''.
 drawGraph :: (Show a, Eq a, Countable a) => Method -> Graph a -> Diagram B
 drawGraph Tree = drawTree
@@ -74,8 +74,19 @@ drawGraph Hierarchical = drawHier
 drawGraph Adaptive = drawFlatAdaptive
 drawGraph ExpressionTree = drawExpressionTree
 
--- | Draw a graph using the specified method, but also using the specified 'Settings'.
-drawGraph' :: (Show a, Eq a, Countable a) => Method -> Settings -> (a -> Diagram B) -> Graph a -> Diagram B
+-- | Draw a graph using the specified 'Method' and 'Settings'.
+-- Using Lens setters the default 'Settings' for each graph-drawing method can be customised like so:
+--
+-- @
+-- ghci> g = Connect (Vertex 1) (Vertex 2) :: Graph Int
+-- ghci> s = (defaultTreeSettings g) & directed .~ Undirected
+-- ghci> d = drawGraph' Tree s g
+-- ghci> saveSVG test_drawing.svg (Just 1000, Nothing) d
+-- @
+--
+-- This creates a graph of integer vertices, creates a 'Settings' instance from the default tree drawing 'Settings' but modifies the '_directed' field using the Lens setter function to make the graph undirected. 
+-- Then this 'drawGraph'' function is used to draw the graph using the settings, which is then output to an svg file using the function 'saveSVG'.
+drawGraph' :: (Show a, Eq a, Countable a) => Method -> Settings a -> Graph a -> Diagram B
 drawGraph' Tree = drawTree'
 drawGraph' TreePartialOrder = drawTreePartialOrder'
 drawGraph' Circle = drawFlatCircle'

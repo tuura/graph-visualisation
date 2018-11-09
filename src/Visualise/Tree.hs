@@ -158,21 +158,21 @@ positionInGivenLayer x ys
 -- | Takes the visualisation settings and a list of layers and produces a diagram.
 -- Folds through the level list and calls 'draw' on each vertex to get its corrisponding diagram. The diagrams in each level are horizontally separated by the amount goverened by the 'Settings' parameter.
 -- The layers themselves are then vertically separated by an amount also specified by the 'Settings' parameter. 
-visualiseLayers :: (Draw a) => Settings -> [[a]] -> Diagram B
-visualiseLayers s levelled = betLayerSepF (fromJust . layerSpacing $ s) $ foldl (\acc level -> center (inLayerSepF (fromJust . nodeSpacing $ s) $ draw <$> level) : acc) [] levelled
-    where inLayerSepF = if fromJust . horizontalOrientation $ s then vsep else hsep
-          betLayerSepF = if fromJust . horizontalOrientation $ s then hsep else vsep
+visualiseLayers :: (Draw b) => Settings a -> [[b]] -> Diagram B
+visualiseLayers s levelled = betLayerSepF (fromJust $ s ^. layerSpacing) $ foldl (\acc level -> center (inLayerSepF (fromJust $ s ^. nodeSpacing) $ draw <$> level) : acc) [] levelled
+    where inLayerSepF = if fromJust (s ^. horizontalOrientation) then vsep else hsep
+          betLayerSepF = if fromJust (s ^. horizontalOrientation) then hsep else vsep
 
 -- | The main visualisation function.
 -- Topologically sorts the list of vertices using 'getLevelList' before separating the vertices into layers by using 'levelled'.
 -- A <https://hackage.haskell.org/package/diagrams Diagram> is then drawn without connections, using 'visualiseLayers', and then the 'rawConnections' list is folded over and the conenctions are added one by one to produce the final diagram (which is then suurrounded by a box).
-visualiseTree :: (Show a, Eq a, Draw a) => Settings        -- ^ A 'Settings' type instance providing the visualisation settings for the graph.
-                                        -> [a]             -- ^ A list of the vertices in the graph -- designed to be of the type 'Node' with a String name and a 'Diagram B' diagram attribute.
-                                        -> [(a,a)]         -- ^ A list of connections, with the first element being the tail and second element being the head (if the graph is 'Directed').
-                                        -> ConnectList a   -- ^ The adjacency list for the graph.
+visualiseTree :: (Show b, Eq b, Draw b) => Settings a      -- ^ A 'Settings' type instance providing the visualisation settings for the graph.
+                                        -> [b]             -- ^ A list of the vertices in the graph -- designed to be of the type 'Node' with a String name and a 'Diagram B' diagram attribute.
+                                        -> [(b,b)]         -- ^ A list of connections, with the first element being the tail and second element being the head (if the graph is 'Directed').
+                                        -> ConnectList b   -- ^ The adjacency list for the graph.
                                         -> Diagram B       -- ^ The 'Diagram B' of the graph visualised as a tree.
 visualiseTree s nodes rawConnections connectedListWithSelfLoops = outDiag <> boundingRect outDiag
-    where outDiag = (if length rawConnections > 0 then connectedDiagram else visualiseLayers s levelled) # frame (fromJust . graphPadding $ s)
+    where outDiag = (if length rawConnections > 0 then connectedDiagram else visualiseLayers s levelled) # frame (fromJust $ s ^. graphPadding)
           -- connectedDiagram = foldr (\(a,b) acc -> connectOutside' arrowOpts1 (show a) (show b) acc) (visualiseLayers s levelled) rawConnections
           connectedDiagram = foldr (\(a,b) acc -> connectVertices s (show a) (show b) acc) (visualiseLayers s levelled) rawConnections
           levelled = getLevels topList [] connectedList
@@ -185,80 +185,51 @@ removeSelfLoops = map (\(a,b) -> (a,delete a b))
 
 -- | Connects two vertices with an arrow.
 -- If the two vertex names are the same a self-loop is drawn, otherwise an arrow between the two nodes is drawn using the 'Settings' provided.
-connectVertices :: Settings -> String -> String -> Diagram B -> Diagram B
+connectVertices :: Settings a -> String -> String -> Diagram B -> Diagram B
 connectVertices s a b d
     | a == b = connectPerim' arrowOpts2 a b (0 @@ turn) (-1/2 @@ turn) d
     | otherwise = connectOutside' arrowOpts1 a b d
-        where arrowOpts1 = with & shaftStyle %~ lw (dynamicThick s) & if directed s == Directed then headLength .~ dynamicHead s else arrowHead .~ noHead
-              arrowOpts2 = with & shaftStyle %~ lw (dynamicThick s) & arrowShaft .~ arc xDir (4/6 @@ turn) & if directed s == Directed then headLength .~ dynamicHead s else arrowHead .~ noHead
+        where arrowOpts1 = with & shaftStyle %~ lw (s ^. dynamicThick) & if s ^. directed == Directed then headLength .~ s ^. dynamicHead else arrowHead .~ noHead
+              arrowOpts2 = with & shaftStyle %~ lw (s ^. dynamicThick) & arrowShaft .~ arc xDir (4/6 @@ turn) & if s ^. directed == Directed then headLength .~ s ^. dynamicHead else arrowHead .~ noHead
 
 -- | Removes indirect connections from the graph and produces a <https://hackage.haskell.org/package/diagrams Diagram>, using 'drawTreePartialOrder'' with the default drawing 'Settings' provided 'defaultTreeSettings'. 
 -- Self-loops are not supported.
 drawTreePartialOrder :: (Show a, Eq a, Countable a) => Graph a -> Diagram B
-drawTreePartialOrder g = drawTreePartialOrder' (defaultTreeSettings g) drawDefaultNode g
+drawTreePartialOrder g = drawTreePartialOrder' (defaultTreeSettings g) g
 
-{-| Removes indirect connections from the graph and draws it using 'visualiseTree', producing a <https://hackage.haskell.org/package/diagrams Diagram>.
-Provides a parameter to supply an instance of the 'Settings' type that will give the drawing functions the graph visualisation settings.
-An example is the output of the 'defaultTreeSettings' function:
-@
-defaultTreeSettings :: (Countable a) => Graph a -> Settings
-defaultTreeSettings g = Settings (dynamicStyle small $ count g) 
-                                 (dynamicStyle thin $ count g) 
-                                 Directed 
-                                 False
-                                 (Just 0.2) 
-                                 (Just 0.3) 
-                                 (Just 0.1) 
-                                 Nothing 
-                                 Nothing 
-                                 Nothing
-@
-This shows that the arrow head size, arrow shaft thickness, whether the graph is directed, whether the graph is horizontally orientated, the horizontal and vertical spacing between vertices and the graph frame padding can be customised.
-
-The indirect conenctions are removed by using 'reduction' and the graph is processed by 'getVertices' to produce a 'ProcessedGraph' instance containing the vertices and their connections.
-Self-loops are not supported.
--}
-drawTreePartialOrder' :: (Show a, Eq a, Countable a) => Settings -> (a -> Diagram B) -> Graph a -> Diagram B
-drawTreePartialOrder' s drawF g = visualiseTree s nodes newConnections reduced
+-- | Removes indirect connections from the graph and draws it using 'visualiseTree', producing a <https://hackage.haskell.org/package/diagrams Diagram>.
+-- A 'Settings' instance can be provided to customise the drawing of the graph.
+-- The indirect conenctions are removed by using 'reduction' and the graph is processed by 'getVertices' to produce a 'ProcessedGraph' instance containing the vertices and their connections.
+-- Self-loops are not supported.
+drawTreePartialOrder' :: (Show a, Eq a, Countable a) => Settings a -> Graph a -> Diagram B
+drawTreePartialOrder' s g = visualiseTree s nodes newConnections reduced
     where newConnections = reducedConnections reduced
           reduced = reduction (connectedTo connections) []
-          (ProcessedGraph nodes connections) = getVertices drawF g
+          (ProcessedGraph nodes connections) = getVertices (s ^. nodeDrawFunction) g
 
--- | Draws the provided graph as a tree, producing a <https://hackage.haskell.org/package/diagrams Diagram> using 'drawTree'', using the default settings. Self-loops are supported.
+-- | Draws the provided graph as a tree, producing a <https://hackage.haskell.org/package/diagrams Diagram> using 'drawTree'', using the default settings function 'defaultTreeSettings'. Self-loops are supported.
 drawTree :: (Show a, Eq a, Countable a) => Graph a -> Diagram B
-drawTree g = drawTree' (defaultTreeSettings g) drawDefaultNode g
+drawTree g = drawTree' (defaultTreeSettings g) g
 
 -- | Draws the graph provided with 'visualiseTree', using the provided visualisation 'Settings'.
 -- Uses 'getVertices' to produce a 'ProcessedGraph' with the graph's verices and conenctions, then uses 'visualiseTree' with these, self-loops are supported.
-drawTree' :: (Show a, Eq a, Countable a) => Settings -> (a -> Diagram B) -> Graph a -> Diagram B
-drawTree' s drawF g = visualiseTree s nodes connections connectedList
+drawTree' :: (Show a, Eq a, Countable a) => Settings a -> Graph a -> Diagram B
+drawTree' s g = visualiseTree s nodes connections connectedList
     where connectedList = connectedTo connections
-          (ProcessedGraph nodes connections) = getVertices drawF g
+          (ProcessedGraph nodes connections) = getVertices (s ^. nodeDrawFunction) g
 
--- | Generates a default 'Settings' from the provided graph.
+
+-- | Generates a default 'Settings' instance from the provided graph.
 -- The arrow head size and shaft thickness vary in accordance with the graph size and the graph is 'Directed'and vertically orientated with layer separation, vertex (horizonal) separation and frame padding of 0.2, 0.3 and 0.1 respectively. 
-defaultTreeSettings :: (Countable a) => Graph a -> Settings
-defaultTreeSettings g = Settings (dynamicStyle small $ count g)
-                                 (dynamicStyle thin $ count g)
-                                 Directed
-                                 (Just False)
-                                 (Just 0.2)
-                                 (Just 0.3)
-                                 (Just 0.1)
-                                 Nothing
-                                 Nothing
-                                 Nothing
+defaultTreeSettings :: (Countable a, Show a) => Graph a -> Settings a
+defaultTreeSettings g = with & dynamicHead .~ (dynamicStyle small $ count g) 
+                             & dynamicThick .~ (dynamicStyle thin $ count g) 
+                             & horizontalOrientation .~ Just False 
+                             & layerSpacing .~ Just 0.2
+                             & nodeSpacing .~ Just 0.3
+                             & graphPadding .~ Just 0.1
 
--- | Generates a default 'Settings' from the provided graph, but rotated so the graph is horizonal instead of vertical.
+-- | Generates a default 'Settings' instance from the provided graph, but rotated so the graph is horizonal instead of vertical.
 -- The arrow head suze and shaft thickness vary in accordance with the graph size and the graph is 'Directed' and horizontally orientated with layer separation, vertex (horizonal) separation and frame padding of 0.2, 0.3 and 0.1 respectively. 
-defaultTreeSettingsHorizontal :: (Countable a) => Graph a -> Settings
-defaultTreeSettingsHorizontal g = Settings (dynamicStyle small $ count g)
-                                 (dynamicStyle thin $ count g)
-                                 Directed
-                                 (Just True)
-                                 (Just 0.2)
-                                 (Just 0.3)
-                                 (Just 0.1)
-                                 Nothing
-                                 Nothing
-                                 Nothing
+defaultTreeSettingsHorizontal :: (Countable a, Show a) => Graph a -> Settings a
+defaultTreeSettingsHorizontal g = (defaultTreeSettings g) & horizontalOrientation .~ Just True
