@@ -57,7 +57,7 @@ reduction ((x,ys):zs) extras = new : reduction zs (new : extras)
 -- | Finds the vertices that don't depend on any other vertices - i.e. the roots of the graph.
 -- Folds through the graph's adjacency list and deletes 
 getRoots :: (Eq a) => [a] -> ConnectList a -> [a]
-getRoots = foldr (\(x,ys) acc -> delete x acc)
+getRoots = foldr (\(x,ys) acc -> acc \\ ys)
 
 -- | Topological sorting of a graph represented by a list of vertices and a 'ConnectList' of vertex connections.
 -- It sorts the graph by using Kahn's algorithm, producing an ordered list of vertices.
@@ -87,13 +87,27 @@ foldThroughConnectedNodes :: (Eq a) => a                     -- ^ The current ro
                                     -> ConnectList a         -- ^ The current adjacency list.
                                     -> ([a], ConnectList a)  -- ^ The first element is the new queue and the second element is the updated adjacency list.
 foldThroughConnectedNodes root queue cTo = foldl (\(accQueue,acc2) b -> -- b is the current node connected to root Node, acc1 is the current list, acc2 is the current adjacency list
-                                              if length (getEdgesTo b acc2) <= 1 then (accQueue ++ [b], deleteConnection root b acc2) -- If the node b has no more incoming edges it is added to the list and removed from the adjacency list
-                                              else (accQueue, deleteConnection root b acc2)) -- Otherwise the list remains the same but it is still removed from the adjacency list
-                                              (queue,cTo) (getEdgesFrom root cTo)
+                                               let edgesFrom = delete root (getEdgesFrom b acc2) in
+                                                   if length edgesFrom < 1 || foldr (\e boolAcc -> if loopsTo e b acc2 && boolAcc == True then True else False) True edgesFrom
+                                                       -- then (accQueue ++ [b], deleteConnections b (root:edgesFrom) acc2) -- If the node b has no more incoming edges it is added to the list and removed from the adjacency list
+                                                      then (accQueue ++ [b], deleteConnection root b acc2) -- If the node b has no more incoming edges it is added to the list and removed from the adjacency list
+                                                   else (accQueue, deleteConnection root b acc2)) -- Otherwise the list remains the same but it is still removed from the adjacency list
+                                               (queue,cTo) (getEdgesTo root cTo)
+
+
+loopsTo :: (Eq a) => a -> a -> ConnectList a -> Bool
+loopsTo root end cTo
+    | end `elem` edgesFromRoot = True
+    | otherwise = foldr (\n acc -> loopsTo n end cTo) False edgesFromRoot
+        where edgesFromRoot = getEdgesFrom root cTo
+
+-- | Removes a connection that goes from 'x' to 'r' in the given adjacency list 
+deleteConnections :: (Eq a) => a -> [a] -> ConnectList a -> ConnectList a
+deleteConnections x rs cTo = foldr (\r cToAcc -> deleteConnection x r cToAcc) cTo rs
 
 -- | Removes a connection that goes from 'x' to 'r' in the given adjacency list 
 deleteConnection :: (Eq a) => a -> a -> ConnectList a -> ConnectList a
-deleteConnection x r cTo = (\(a,bs) -> if a == r then (a,delete x bs) else (a,bs)) <$> cTo
+deleteConnection x r cTo = (\(a,bs) -> if a == x then (a,delete r bs) else (a,bs)) <$> cTo
 
 -- | Returns whether vertex 'a' depends on vertex 'b' by seeing if 'b' is an element in the list of edges to 'a' from 'getEdgesTo'.
 dependsOn :: (Eq a) => a -> a -> ConnectList a -> Bool
@@ -159,7 +173,7 @@ positionInGivenLayer x ys
 -- Folds through the level list and calls 'draw' on each vertex to get its corrisponding diagram. The diagrams in each level are horizontally separated by the amount goverened by the 'Settings' parameter.
 -- The layers themselves are then vertically separated by an amount also specified by the 'Settings' parameter. 
 visualiseLayers :: (Draw b) => Settings a -> [[b]] -> Diagram B
-visualiseLayers s levelled = betLayerSepF (fromJust $ s ^. layerSpacing) $ foldl (\acc level -> center (inLayerSepF (fromJust $ s ^. nodeSpacing) $ draw <$> level) : acc) [] levelled
+visualiseLayers s levelled = betLayerSepF (fromJust $ s ^. layerSpacing) $ foldr (\level acc -> center (inLayerSepF (fromJust $ s ^. nodeSpacing) $ draw <$> level) : acc) [] levelled
     where inLayerSepF = if fromJust (s ^. horizontalOrientation) then vsep else hsep
           betLayerSepF = if fromJust (s ^. horizontalOrientation) then hsep else vsep
 
@@ -174,7 +188,7 @@ visualiseTree :: (Show b, Eq b, Draw b) => Settings a      -- ^ A 'Settings' typ
 visualiseTree s nodes rawConnections connectedListWithSelfLoops = outDiag <> boundingRect outDiag
     where outDiag = (if length rawConnections > 0 then connectedDiagram else visualiseLayers s levelled) # frame (fromJust $ s ^. graphPadding)
           -- connectedDiagram = foldr (\(a,b) acc -> connectOutside' arrowOpts1 (show a) (show b) acc) (visualiseLayers s levelled) rawConnections
-          connectedDiagram = foldr (\(a,b) acc -> connectVertices s (show a) (show b) acc) (visualiseLayers s levelled) rawConnections
+          connectedDiagram = foldr (\(a,b) acc -> connectVertices s levelled a b acc) (visualiseLayers s levelled) rawConnections
           levelled = getLevels topList [] connectedList
           topList = nub $ getLevelList (getRoots nodes connectedList) connectedList
           connectedList = removeSelfLoops connectedListWithSelfLoops
@@ -183,14 +197,19 @@ visualiseTree s nodes rawConnections connectedListWithSelfLoops = outDiag <> bou
 removeSelfLoops :: (Eq a) => ConnectList a -> ConnectList a
 removeSelfLoops = map (\(a,b) -> (a,delete a b))
 
+getLevel :: (Eq a) => a -> [[a]] -> Int
+getLevel x = snd . foldr (\ys (accB,accC) -> if accB == True || x `elem` ys then (True,accC) else (False,accC + 1)) (False,0)
+
 -- | Connects two vertices with an arrow.
 -- If the two vertex names are the same a self-loop is drawn, otherwise an arrow between the two nodes is drawn using the 'Settings' provided.
-connectVertices :: Settings a -> String -> String -> Diagram B -> Diagram B
-connectVertices s a b d
-    | a == b = connectPerim' arrowOpts2 a b (0 @@ turn) (-1/2 @@ turn) d
-    | otherwise = connectOutside' arrowOpts1 a b d
+connectVertices :: (Show b, Eq b) => Settings a -> [[b]] -> b -> b -> Diagram B -> Diagram B
+connectVertices s l a b d
+    | a == b = connectPerim' arrowOpts3 (show a) (show b) (0 @@ turn) (-1/2 @@ turn) d
+    | (b `getLevel` l) - (a `getLevel` l) > 1 = connectPerim' arrowOpts2 (show a) (show b) (0 @@ turn) (0 @@ turn) d
+    | otherwise = connectOutside' arrowOpts1 (show a) (show b) d
         where arrowOpts1 = with & shaftStyle %~ lw (s ^. dynamicThick) & if s ^. directed == Directed then headLength .~ s ^. dynamicHead else arrowHead .~ noHead
-              arrowOpts2 = with & shaftStyle %~ lw (s ^. dynamicThick) & arrowShaft .~ arc xDir (4/6 @@ turn) & if s ^. directed == Directed then headLength .~ s ^. dynamicHead else arrowHead .~ noHead
+              arrowOpts2 = with & shaftStyle %~ lw (s ^. dynamicThick) & arrowShaft .~ arc xDir (3/6 @@ turn) & if s ^. directed == Directed then headLength .~ s ^. dynamicHead else arrowHead .~ noHead
+              arrowOpts3 = with & shaftStyle %~ lw (s ^. dynamicThick) & arrowShaft .~ arc xDir (4/6 @@ turn) & if s ^. directed == Directed then headLength .~ s ^. dynamicHead else arrowHead .~ noHead
 
 -- | Removes indirect connections from the graph and produces a <https://hackage.haskell.org/package/diagrams Diagram>, using 'drawTreePartialOrder'' with the default drawing 'Settings' provided 'defaultTreeSettings'. 
 -- Self-loops are not supported.
@@ -233,3 +252,13 @@ defaultTreeSettings g = with & dynamicHead .~ (dynamicStyle small $ count g)
 -- The arrow head suze and shaft thickness vary in accordance with the graph size and the graph is 'Directed' and horizontally orientated with layer separation, vertex (horizonal) separation and frame padding of 0.2, 0.3 and 0.1 respectively. 
 defaultTreeSettingsHorizontal :: (Countable a, Show a) => Graph a -> Settings a
 defaultTreeSettingsHorizontal g = (defaultTreeSettings g) & horizontalOrientation .~ Just True
+
+
+-- g = Overlay (Overlay (Overlay (Connect (Vertex "a") (Vertex "b")) (Connect (Vertex "b") (Vertex "c"))) (Connect (Vertex "c") (Vertex "d"))) (Connect (Vertex "d") (Vertex "b"))
+g = (1 * ((2 * ((4 * 7) + (5 * 7))) + (3 * (6 * (5 * 7))))) :: Graph Int
+s = defaultTreeSettings g
+(ProcessedGraph nodes connections) = getVertices (s ^. nodeDrawFunction) g
+connectedList = removeSelfLoops (connectedTo connections)
+topList = nub $ getLevelList (getRoots nodes connectedList) connectedList
+levelled = getLevels topList [] connectedList 
+r=getRoots nodes connectedList
