@@ -15,6 +15,7 @@
 -- which uses the Coffman-Graham algorithm to remove indirect connections
 -- for directed acyclic graphs and 'drawTreePartialOrder'' which does the same
 -- but allows the 'Settings' to be specified.
+-- Cyclic graphs are also supported in a limited capacity.
 --
 -----------------------------------------------------------------------------
 module Visualise.Tree (
@@ -87,14 +88,14 @@ foldThroughConnectedNodes :: (Eq a) => a                     -- ^ The current ro
                                     -> ConnectList a         -- ^ The current adjacency list.
                                     -> ([a], ConnectList a)  -- ^ The first element is the new queue and the second element is the updated adjacency list.
 foldThroughConnectedNodes root queue cTo = foldl (\(accQueue,acc2) b -> -- b is the current node connected to root Node, acc1 is the current list, acc2 is the current adjacency list
-                                               let edgesFrom = delete root (getEdgesFrom b acc2) in
-                                                   if length edgesFrom < 1 || foldr (\e boolAcc -> if loopsTo e b acc2 && boolAcc == True then True else False) True edgesFrom
+                                               let edgesFrom = delete root (getEdgesFrom b acc2) in -- Gets the incoming vertices to b, but removes the root from this list
+                                                   if length edgesFrom < 1 || foldr (\e boolAcc -> if loopsTo e b acc2 && boolAcc == True then True else False) True edgesFrom -- Checks if there are any other incoming vertices and if so checks if they form a loop that will end up back at b.
                                                        -- then (accQueue ++ [b], deleteConnections b (root:edgesFrom) acc2) -- If the node b has no more incoming edges it is added to the list and removed from the adjacency list
-                                                      then (accQueue ++ [b], deleteConnection root b acc2) -- If the node b has no more incoming edges it is added to the list and removed from the adjacency list
+                                                      then (accQueue ++ [b], deleteConnection root b acc2) -- If the node b has no more incoming edges (or all incoming edges form loops) it is added to the list and removed from the adjacency list
                                                    else (accQueue, deleteConnection root b acc2)) -- Otherwise the list remains the same but it is still removed from the adjacency list
                                                (queue,cTo) (getEdgesTo root cTo)
 
-
+-- | Checks if the vertex 'end' can be reached by following the outbound connections recursively from 'root'.
 loopsTo :: (Eq a) => a -> a -> ConnectList a -> Bool
 loopsTo root end cTo
     | end `elem` edgesFromRoot = True
@@ -197,6 +198,7 @@ visualiseTree s nodes rawConnections connectedListWithSelfLoops = outDiag <> bou
 removeSelfLoops :: (Eq a) => ConnectList a -> ConnectList a
 removeSelfLoops = map (\(a,b) -> (a,delete a b))
 
+-- | Gets the level the provided element is on in the provided list of lists.
 getLevel :: (Eq a) => a -> [[a]] -> Int
 getLevel x = snd . foldr (\ys (accB,accC) -> if accB == True || x `elem` ys then (True,accC) else (False,accC + 1)) (False,0)
 
@@ -226,12 +228,12 @@ drawTreePartialOrder' s g = visualiseTree s nodes newConnections reduced
           reduced = reduction (connectedTo connections) []
           (ProcessedGraph nodes connections) = getVertices (s ^. nodeDrawFunction) g
 
--- | Draws the provided graph as a tree, producing a <https://hackage.haskell.org/package/diagrams Diagram> using 'drawTree'', using the default settings function 'defaultTreeSettings'. Self-loops are supported.
+-- | Draws the provided graph as a tree, producing a <https://hackage.haskell.org/package/diagrams Diagram> using 'drawTree'', using the default settings function 'defaultTreeSettings'. Self-loops are supported and basic cyclic functionality is also supported.
 drawTree :: (Show a, Eq a, Countable a) => Graph a -> Diagram B
 drawTree g = drawTree' (defaultTreeSettings g) g
 
 -- | Draws the graph provided with 'visualiseTree', using the provided visualisation 'Settings'.
--- Uses 'getVertices' to produce a 'ProcessedGraph' with the graph's verices and conenctions, then uses 'visualiseTree' with these, self-loops are supported.
+-- Uses 'getVertices' to produce a 'ProcessedGraph' with the graph's verices and conenctions, then uses 'visualiseTree' with these, self-loops and basic cyclic graphs are supported.
 drawTree' :: (Show a, Eq a, Countable a) => Settings a -> Graph a -> Diagram B
 drawTree' s g = visualiseTree s nodes connections connectedList
     where connectedList = connectedTo connections
@@ -252,13 +254,3 @@ defaultTreeSettings g = with & dynamicHead .~ (dynamicStyle small $ count g)
 -- The arrow head suze and shaft thickness vary in accordance with the graph size and the graph is 'Directed' and horizontally orientated with layer separation, vertex (horizonal) separation and frame padding of 0.2, 0.3 and 0.1 respectively. 
 defaultTreeSettingsHorizontal :: (Countable a, Show a) => Graph a -> Settings a
 defaultTreeSettingsHorizontal g = (defaultTreeSettings g) & horizontalOrientation .~ Just True
-
-
--- g = Overlay (Overlay (Overlay (Connect (Vertex "a") (Vertex "b")) (Connect (Vertex "b") (Vertex "c"))) (Connect (Vertex "c") (Vertex "d"))) (Connect (Vertex "d") (Vertex "b"))
-g = (1 * ((2 * ((4 * 7) + (5 * 7))) + (3 * (6 * (5 * 7))))) :: Graph Int
-s = defaultTreeSettings g
-(ProcessedGraph nodes connections) = getVertices (s ^. nodeDrawFunction) g
-connectedList = removeSelfLoops (connectedTo connections)
-topList = nub $ getLevelList (getRoots nodes connectedList) connectedList
-levelled = getLevels topList [] connectedList 
-r=getRoots nodes connectedList
